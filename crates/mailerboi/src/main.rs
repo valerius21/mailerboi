@@ -3,6 +3,7 @@ use clap::Parser;
 use tracing_subscriber::{fmt, EnvFilter};
 
 mod cli;
+mod cmd;
 
 use cli::{Cli, Commands};
 
@@ -14,10 +15,10 @@ async fn main() -> Result<()> {
 
     match cli.command {
         Commands::ListAccounts => {
-            println!("list-accounts: not yet implemented");
+            cmd::accounts::run(cli.config, &cli.output).await?;
         }
         Commands::Doctor => {
-            println!("doctor: not yet implemented");
+            cmd::doctor::run(cli.config, cli.account.as_deref(), &cli.output, cli.insecure).await?;
         }
         Commands::Check { mailbox } => {
             println!("check {}: not yet implemented", mailbox);
