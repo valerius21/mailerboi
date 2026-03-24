@@ -53,3 +53,8 @@
 - Added `mailerboi_core::imap` with `ImapSession` enum (`Tls`/`Plain`) and top-level `connect`, `disconnect`, and `doctor` async functions.
 - `doctor` now evaluates five checkpoints (`dns_ok`, `tcp_ok`, `tls_ok`, `auth_ok`, `inbox_ok`) and preserves first failure detail in `error` while short-circuiting on hard connectivity failures.
 - STARTTLS is intentionally not implemented yet; when `starttls = true`, current behavior logs a warning and uses plain IMAP path.
+
+## [2026-03-24] Task 8: output formatting
+- Added `mailerboi_core::output` with a shared `OutputFormat` enum and formatter helpers for folders, envelopes, single messages, account checks, account lists, and doctor reports.
+- Table rendering uses `comfy-table` with condensed UTF-8 borders; JSON uses `serde_json`; TOON serialization uses `toon_format::encode_default()` for list/report payloads.
+- `DoctorReport` now derives serde traits so doctor results can be emitted in machine-readable formats without adapter structs.

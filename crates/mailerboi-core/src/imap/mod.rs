@@ -1,6 +1,7 @@
 use std::net::ToSocketAddrs;
 
 use async_native_tls::TlsConnector;
+use serde::{Deserialize, Serialize};
 use tokio::net::TcpStream;
 use tracing::{debug, instrument, warn};
 
@@ -15,7 +16,7 @@ pub enum ImapSession {
     Plain(PlainSession),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct DoctorReport {
     pub account: String,
     pub dns_ok: bool,
