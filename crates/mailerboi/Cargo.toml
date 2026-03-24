@@ -7,3 +7,5 @@ edition.workspace = true
 mailerboi-core = { path = "../mailerboi-core" }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 anyhow = "1"
+clap = { version = "4", features = ["derive", "env"] }
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }

@@ -58,3 +58,8 @@
 - Added `mailerboi_core::output` with a shared `OutputFormat` enum and formatter helpers for folders, envelopes, single messages, account checks, account lists, and doctor reports.
 - Table rendering uses `comfy-table` with condensed UTF-8 borders; JSON uses `serde_json`; TOON serialization uses `toon_format::encode_default()` for list/report payloads.
 - `DoctorReport` now derives serde traits so doctor results can be emitted in machine-readable formats without adapter structs.
+
+## [2026-03-24] Task 9: CLI skeleton
+- `clap` derive on `Commands` automatically exposes kebab-case subcommands, so `ListAccounts` becomes `list-accounts` without extra rename attributes.
+- `mailerboi_core::output::OutputFormat` can stay in the core crate unchanged; the CLI uses `value_parser = clap::value_parser!(OutputFormat)` to parse its existing `FromStr` implementation.
+- Keeping parse tests in `crates/mailerboi/src/main.rs` works for a binary-only crate and verifies command wiring without introducing a library target.

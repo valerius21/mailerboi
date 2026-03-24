@@ -36,3 +36,7 @@
 ## [2026-03-24] Task 8 output module
 - Centralize CLI rendering in `mailerboi_core::output` so callers can switch between `table`, `json`, and `toon` with one enum instead of per-command formatting code.
 - Keep single-message table output human-readable plain text, while structured formats (`json`, `toon`) serialize full data models for scripting and downstream CLI consumption.
+
+## [2026-03-24] Task 9 CLI skeleton
+- Keep the binary crate as the sole owner of clap parsing in `crates/mailerboi/src/cli.rs`, with `main.rs` limited to tracing setup and stub command dispatch.
+- Use clap field/variant doc comments as the command help source so `cargo run -p mailerboi -- --help` stays descriptive without separate manual help strings.

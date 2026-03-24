@@ -1,0 +1,65 @@
+   Compiling log v0.4.29
+   Compiling tracing-core v0.1.36
+   Compiling clap_builder v4.6.0
+   Compiling sharded-slab v0.1.7
+   Compiling matchers v0.2.0
+   Compiling thread_local v1.1.9
+   Compiling nu-ansi-term v0.50.3
+   Compiling mio v1.1.1
+   Compiling native-tls v0.2.18
+   Compiling arboard v3.6.1
+   Compiling tracing v0.1.44
+   Compiling tracing-log v0.2.0
+   Compiling signal-hook-mio v0.2.5
+   Compiling tokio v1.50.0
+   Compiling tracing-subscriber v0.3.23
+   Compiling crossterm v0.28.1
+   Compiling ratatui v0.29.0
+   Compiling clap v4.6.0
+   Compiling tui-textarea v0.7.0
+   Compiling toon-format v0.4.4
+   Compiling async-native-tls v0.5.0
+   Compiling async-imap v0.11.2
+   Compiling mailerboi-core v0.1.0 (/home/valerius/code/mailerboi/crates/mailerboi-core)
+   Compiling mailerboi v0.1.0 (/home/valerius/code/mailerboi/crates/mailerboi)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 8.37s
+     Running unittests src/main.rs (target/debug/deps/mailerboi-f3b1bdd4f7989dc8)
+
+running 5 tests
+test tests::parse_list_with_args ... ok
+test tests::parse_global_flags ... ok
+test tests::parse_list_accounts ... ok
+test tests::parse_read_with_uid ... ok
+test tests::parse_search_filters ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Compiling mailerboi v0.1.0 (/home/valerius/code/mailerboi/crates/mailerboi)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 3.04s
+     Running `target/debug/mailerboi --help`
+Multi-account IMAP email CLI
+
+Usage: mailerboi [OPTIONS] <COMMAND>
+
+Commands:
+  list-accounts  List all configured accounts
+  doctor         Test IMAP connectivity for an account
+  check          Show unread message count per account/mailbox
+  folders        List all mailboxes/folders
+  list           List emails in a mailbox
+  read           Read a specific email by UID
+  search         Search emails with filters
+  move           Move a message to another folder
+  delete         Delete a message (moves to Trash by default)
+  flag           Set or unset flags on a message
+  download       Download attachments from a message
+  draft          Create a draft message
+  help           Print this message or the help of the given subcommand(s)
+
+Options:
+  -c, --config <CONFIG>    Path to config file (default: ~/.config/mailerboi/config.toon) [env: MAILERBOI_CONFIG=]
+  -a, --account <ACCOUNT>  Account name to use (default: first or marked default)
+  -o, --output <OUTPUT>    Output format [default: table]
+      --insecure           Accept invalid TLS certificates (for self-signed certs)
+  -h, --help               Print help
+  -V, --version            Print version
