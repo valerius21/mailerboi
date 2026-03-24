@@ -1826,11 +1826,11 @@ Task 1 → Task 2/3 → Task 6/7 → Task 13 → Task 19 → Task 21 → Task 23
   Run `cargo clippy --workspace -- -D warnings` + `cargo fmt --check` + `cargo test --workspace`. Review all changed files for: `as any`-equivalent patterns, empty error handling, leftover debug prints, commented-out code, unused imports. Check AI slop: excessive comments, over-abstraction, generic names.
   Output: `Build [PASS/FAIL] | Clippy [PASS/FAIL] | Tests [N pass/N fail] | Files [N clean/N issues] | VERDICT`
 
-- [ ] F3. **Real Manual QA** — `unspecified-high`
+- [x] F3. **Real Manual QA** — `unspecified-high`
   Start GreenMail Docker. Execute EVERY subcommand against it: list-accounts, doctor, check, folders, list, read, search, move, delete, flag, download, draft. Test all 3 output formats. Test multi-account. Test error cases (wrong password, unreachable server). Save evidence to `.sisyphus/evidence/final-qa/`.
   Output: `Commands [12/12 pass] | Output Formats [3/3] | Error Handling [N/N] | VERDICT`
 
-- [ ] F4. **Scope Fidelity Check** — `deep`
+- [x] F4. **Scope Fidelity Check** — `deep`
   For each task: read "What to do", read actual diff (git log/diff). Verify 1:1 — everything in spec was built, nothing beyond spec was built. Check "Must NOT do" compliance. Detect cross-task contamination. Flag unaccounted changes.
   Output: `Tasks [N/N compliant] | Contamination [CLEAN/N issues] | Unaccounted [CLEAN/N files] | VERDICT`
 
