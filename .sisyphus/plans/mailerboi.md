@@ -228,7 +228,7 @@ Task 1 → Task 2/3 → Task 6/7 → Task 13 → Task 19 → Task 21 → Task 23
 
 ## TODOs
 
-- [ ] 1. Project Scaffold — git init, workspace, devenv, tooling
+- [x] 1. Project Scaffold — git init, workspace, devenv, tooling
 
   **What to do**:
   - Initialize git: `git init`

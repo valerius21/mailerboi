@@ -15,3 +15,14 @@
 ## Rust Specifics
 - `move` is a Rust keyword — use `move_cmd.rs` for the move command file
 - async-imap returns `async_imap::error::Result` not std Result
+
+## [2026-03-24] Spike Task 2: toon-format result
+PASS: `toon-format` v0.4.4 roundtrips custom Rust structs with `Serialize`/`Deserialize` (not only `serde_json::Value`).
+
+Validated in `mailerboi-core` tests:
+- Simple struct (`TestConfig`) encode/decode equality.
+- Nested map struct (`TestRoot` + `HashMap<String, TestAccount>`) encode/decode equality.
+- Special character payload (comma, colon, Unicode `h\u{00E9}llo`) preserved.
+- Optional fields (`Option<String>`) for both `Some` and `None` preserved.
+
+Actionable decision for Task 6: use `toon_format::encode_default()` / `toon_format::decode_default()` directly for config parsing.
