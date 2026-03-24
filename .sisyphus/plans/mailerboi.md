@@ -951,7 +951,7 @@ Task 1 → Task 2/3 → Task 6/7 → Task 13 → Task 19 → Task 21 → Task 23
   - Message: `feat: add CLI skeleton with clap subcommands`
   - Pre-commit: `cargo test --workspace`
 
-- [ ] 10. list-accounts + doctor Commands
+- [x] 10. list-accounts + doctor Commands
 
   **What to do**:
   - Implement `list-accounts` command in `crates/mailerboi/src/cmd/accounts.rs`:
