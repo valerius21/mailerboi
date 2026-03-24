@@ -82,6 +82,107 @@ impl ImapSession {
             .collect())
     }
 
+    pub async fn list_envelopes(
+        &mut self,
+        mailbox: &str,
+        limit: u32,
+        page: u32,
+    ) -> Result<Vec<crate::domain::Envelope>> {
+        use futures::StreamExt;
+
+        let mbox = self.select(mailbox).await?;
+        let total = mbox.exists;
+        if total == 0 {
+            return Ok(vec![]);
+        }
+
+        let page = page.max(1);
+        let limit = limit.max(1);
+        let end = total.saturating_sub((page - 1) * limit);
+        if end == 0 {
+            return Ok(vec![]);
+        }
+        let start = end.saturating_sub(limit - 1).max(1);
+        let range = format!("{}:{}", start, end);
+
+        let fetches: Vec<_> = match self {
+            ImapSession::Tls(s) => s
+                .fetch(&range, "(UID ENVELOPE FLAGS)")
+                .await
+                .map_err(|e| ImapError::Protocol(e.to_string()))?
+                .collect()
+                .await,
+            ImapSession::Plain(s) => s
+                .fetch(&range, "(UID ENVELOPE FLAGS)")
+                .await
+                .map_err(|e| ImapError::Protocol(e.to_string()))?
+                .collect()
+                .await,
+        };
+
+        let mut envelopes: Vec<crate::domain::Envelope> = fetches
+            .into_iter()
+            .filter_map(|f| f.ok())
+            .filter_map(|fetch| {
+                let env = fetch.envelope()?;
+                let uid = fetch.uid.unwrap_or(0);
+                let subject = env
+                    .subject
+                    .as_ref()
+                    .and_then(|s| std::str::from_utf8(s).ok())
+                    .map(|s| s.to_string());
+                let from = env
+                    .from
+                    .as_ref()
+                    .map(|addrs| {
+                        addrs
+                            .iter()
+                            .map(|a| crate::domain::Address {
+                                name: a
+                                    .name
+                                    .as_ref()
+                                    .and_then(|n| std::str::from_utf8(n).ok())
+                                    .map(|s| s.to_string()),
+                                email: format!(
+                                    "{}@{}",
+                                    a.mailbox
+                                        .as_ref()
+                                        .and_then(|m| std::str::from_utf8(m).ok())
+                                        .unwrap_or(""),
+                                    a.host
+                                        .as_ref()
+                                        .and_then(|h| std::str::from_utf8(h).ok())
+                                        .unwrap_or("")
+                                ),
+                            })
+                            .collect()
+                    })
+                    .unwrap_or_default();
+                let date = env
+                    .date
+                    .as_ref()
+                    .and_then(|d| std::str::from_utf8(d).ok())
+                    .map(|s| s.to_string());
+                let flags: Vec<crate::domain::Flag> = fetch
+                    .flags()
+                    .map(|f| crate::domain::Flag::from_imap_str(&format!("{:?}", f)))
+                    .collect();
+                Some(crate::domain::Envelope {
+                    uid,
+                    subject,
+                    from,
+                    to: vec![],
+                    date,
+                    flags,
+                    has_attachments: false,
+                })
+            })
+            .collect();
+
+        envelopes.reverse();
+        Ok(envelopes)
+    }
+
     pub async fn logout(mut self) -> Result<()> {
         match self {
             ImapSession::Tls(ref mut s) => s

@@ -73,3 +73,8 @@
 - Added `ImapSession::list_folders()` in `crates/mailerboi-core/src/imap/mod.rs` and collected the async-imap `LIST` stream with `futures::StreamExt` to convert server names directly into domain `Folder` values.
 - New CLI command module `crates/mailerboi/src/cmd/folders.rs` follows the same config/account/credentials flow as `doctor`, so folder listing stays a thin wrapper around core IMAP and shared output formatting.
 - End-to-end `folders` verification depends on `credentials_path()` resolving a real file; for local fixture runs, placing `test-credentials.toml` at `~/.config/mailerboi/credentials.toml` satisfies the existing lookup path without changing config code.
+
+## [2026-03-24] Task 12 list command
+- Added `ImapSession::list_envelopes()` in `crates/mailerboi-core/src/imap/mod.rs`; because `async-imap::Session::fetch()` returns different opaque stream types for TLS vs plain sessions, each match arm must collect its stream before the results can be unified as a `Vec`.
+- Pagination uses IMAP sequence numbers only to choose the fetch window (`start:end`) and then returns domain `Envelope` values with UIDs preserved for downstream message operations.
+- New CLI wrapper `crates/mailerboi/src/cmd/list.rs` mirrors the existing folder/doctor command flow: load config, resolve account + password, connect, call core IMAP, print shared formatted output, then best-effort logout.

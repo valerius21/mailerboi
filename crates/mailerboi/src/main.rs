@@ -32,10 +32,16 @@ async fn main() -> Result<()> {
             limit,
             page,
         } => {
-            println!(
-                "list {} (limit={}, page={}): not yet implemented",
-                mailbox, limit, page
-            );
+            cmd::list::run(
+                cli.config,
+                cli.account.as_deref(),
+                &cli.output,
+                cli.insecure,
+                &mailbox,
+                limit,
+                page,
+            )
+            .await?;
         }
         Commands::Read {
             uid,
