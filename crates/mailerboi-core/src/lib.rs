@@ -3,6 +3,7 @@
 pub mod domain;
 pub mod error;
 pub mod config;
+pub mod imap;
 
 mod spike_toon;
 mod spike_imap;

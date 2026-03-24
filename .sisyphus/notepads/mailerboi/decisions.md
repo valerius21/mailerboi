@@ -27,3 +27,8 @@
 ## [2026-03-24] Task 6 config module
 - Keep `AppConfig` public shape as `accounts: HashMap<String, AccountConfig>` and implement a custom `Deserialize` bridge so TOON dotted keys (`accounts.<name>`) are accepted without changing caller-facing types.
 - Keep credentials as plaintext `credentials.toml` with `#[serde(flatten)]` map to support account-name keyed passwords without fixed schema.
+
+## [2026-03-24] Task 7 IMAP connectivity
+- Model live IMAP connections with an enum wrapper (`ImapSession::Tls` | `ImapSession::Plain`) instead of trait abstraction/pooling so each operation owns exactly one session lifecycle.
+- Expose a dedicated `disconnect(session)` helper that delegates to protocol `logout()` for explicit teardown semantics in callers/tests.
+- Keep implicit TLS (`tls = true`, `starttls = false`) fully supported now; defer STARTTLS handshake implementation and explicitly warn when falling back to plain path.

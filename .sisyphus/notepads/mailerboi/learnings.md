@@ -48,3 +48,8 @@
 - TOON input using dotted keys (`accounts.personal:`) does not deserialize into `AppConfig { accounts: ... }` directly; custom deserialization is needed to map `accounts.<name>` keys into the `accounts` map.
 - `load_credentials` now emits a Unix warning when credentials mode is world-readable (`mode & 0o004 != 0`) without failing the load.
 - Account resolution order is stable: explicit name > first `default = true` account > first configured account.
+
+## [2026-03-24] Task 7: IMAP connection manager
+- Added `mailerboi_core::imap` with `ImapSession` enum (`Tls`/`Plain`) and top-level `connect`, `disconnect`, and `doctor` async functions.
+- `doctor` now evaluates five checkpoints (`dns_ok`, `tcp_ok`, `tls_ok`, `auth_ok`, `inbox_ok`) and preserves first failure detail in `error` while short-circuiting on hard connectivity failures.
+- STARTTLS is intentionally not implemented yet; when `starttls = true`, current behavior logs a warning and uses plain IMAP path.
