@@ -47,7 +47,8 @@ pub async fn run(params: DraftParams) -> Result<()> {
     let body_text = if let Some(b) = body {
         b
     } else if let Some(f) = body_file {
-        tokio::fs::read_to_string(&f).await
+        tokio::fs::read_to_string(&f)
+            .await
             .with_context(|| format!("Failed to read body file {}", f.display()))?
     } else {
         anyhow::bail!("Provide --body or --body-file");

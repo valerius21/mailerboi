@@ -101,7 +101,8 @@ pub fn config_path() -> PathBuf {
     }
 
     dirs::config_dir()
-        .unwrap_or_else(|| PathBuf::from("~/.config"))
+        .or_else(|| dirs::home_dir().map(|h| h.join(".config")))
+        .unwrap_or_else(|| PathBuf::from("/etc"))
         .join("mailerboi")
         .join("config.toon")
 }
@@ -143,7 +144,8 @@ pub fn credentials_path() -> PathBuf {
     }
 
     dirs::config_dir()
-        .unwrap_or_else(|| PathBuf::from("~/.config"))
+        .or_else(|| dirs::home_dir().map(|h| h.join(".config")))
+        .unwrap_or_else(|| PathBuf::from("/etc"))
         .join("mailerboi")
         .join("credentials.toml")
 }

@@ -1818,7 +1818,7 @@ Task 1 → Task 2/3 → Task 6/7 → Task 13 → Task 19 → Task 21 → Task 23
 
 > 4 review agents run in PARALLEL. ALL must APPROVE. Present consolidated results to user and get explicit "okay" before completing.
 
-- [ ] F1. **Plan Compliance Audit** — `oracle`
+- [x] F1. **Plan Compliance Audit** — `oracle`
   Read the plan end-to-end. For each "Must Have": verify implementation exists (read file, run `cargo run -p mailerboi -- <cmd>`). For each "Must NOT Have": search codebase for forbidden patterns (unwrap in lib, println in lib, trait objects, OAuth2 code) — reject with file:line if found. Check evidence files exist in .sisyphus/evidence/. Compare deliverables against plan.
   Output: `Must Have [N/N] | Must NOT Have [N/N] | Tasks [N/N] | VERDICT: APPROVE/REJECT`
 

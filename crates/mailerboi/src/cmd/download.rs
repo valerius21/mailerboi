@@ -48,7 +48,9 @@ pub async fn run(params: DownloadParams) -> Result<()> {
         .context("IMAP connection failed")?;
 
     let target_dir = dir.unwrap_or_else(|| PathBuf::from("."));
-    tokio::fs::create_dir_all(&target_dir).await.context("Failed to create output directory")?;
+    tokio::fs::create_dir_all(&target_dir)
+        .await
+        .context("Failed to create output directory")?;
 
     let saved = session
         .download_attachments(uid, &mailbox, &target_dir, file.as_deref())
