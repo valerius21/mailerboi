@@ -1641,7 +1641,7 @@ Task 1 → Task 2/3 → Task 6/7 → Task 13 → Task 19 → Task 21 → Task 23
   - Message: `feat: add draft command — IMAP APPEND`
   - Pre-commit: `cargo test --workspace`
 
-- [ ] 21. CLI Integration Tests
+- [x] 21. CLI Integration Tests
 
   **What to do**:
   - Create `crates/mailerboi/tests/integration.rs`:
