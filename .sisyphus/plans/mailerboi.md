@@ -860,7 +860,7 @@ Task 1 → Task 2/3 → Task 6/7 → Task 13 → Task 19 → Task 21 → Task 23
 
 ---
 
-- [ ] 9. CLI Skeleton with Clap Subcommands
+- [x] 9. CLI Skeleton with Clap Subcommands
 
   **What to do**:
   - Add deps to `mailerboi` Cargo.toml: `clap = { version = "4", features = ["derive", "env"] }`, `anyhow`, `tracing-subscriber`, `mailerboi-core`

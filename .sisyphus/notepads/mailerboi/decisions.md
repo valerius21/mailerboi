@@ -40,3 +40,7 @@
 ## [2026-03-24] Task 9 CLI skeleton
 - Keep the binary crate as the sole owner of clap parsing in `crates/mailerboi/src/cli.rs`, with `main.rs` limited to tracing setup and stub command dispatch.
 - Use clap field/variant doc comments as the command help source so `cargo run -p mailerboi -- --help` stays descriptive without separate manual help strings.
+
+## [2026-03-24] Task 10 command implementations
+- Keep `list-accounts` and `doctor` as thin binary-crate adapters in `crates/mailerboi/src/cmd/`, calling existing `mailerboi_core` config, IMAP, and output helpers rather than duplicating logic in `main.rs`.
+- Keep CLI verification offline by using fixture-backed config for `list-accounts`; do not add doctor integration tests against live servers in this task.

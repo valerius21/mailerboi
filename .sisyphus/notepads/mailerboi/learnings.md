@@ -63,3 +63,8 @@
 - `clap` derive on `Commands` automatically exposes kebab-case subcommands, so `ListAccounts` becomes `list-accounts` without extra rename attributes.
 - `mailerboi_core::output::OutputFormat` can stay in the core crate unchanged; the CLI uses `value_parser = clap::value_parser!(OutputFormat)` to parse its existing `FromStr` implementation.
 - Keeping parse tests in `crates/mailerboi/src/main.rs` works for a binary-only crate and verifies command wiring without introducing a library target.
+
+## [2026-03-24] Task 10 command wiring
+- Added thin async command modules under `crates/mailerboi/src/cmd/` so CLI wiring stays separate from clap parsing and delegates config loading / output rendering to `mailerboi-core`.
+- `doctor` reuses `resolve_account()` plus `credentials.toml` lookup, then exits with status 1 when any doctor checkpoint fails while still printing the formatted report first.
+- A minimal TOON fixture under `crates/mailerboi/tests/fixtures/test-config.toon` is enough to verify `list-accounts` end-to-end without touching real mail servers.

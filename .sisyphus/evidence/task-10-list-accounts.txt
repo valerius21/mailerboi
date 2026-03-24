@@ -1,0 +1,21 @@
+   Compiling mailerboi v0.1.0 (/home/valerius/code/mailerboi/crates/mailerboi)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.34s
+     Running unittests src/main.rs (target/debug/deps/mailerboi-f3b1bdd4f7989dc8)
+
+running 5 tests
+test tests::parse_list_accounts ... ok
+test tests::parse_global_flags ... ok
+test tests::parse_list_with_args ... ok
+test tests::parse_search_filters ... ok
+test tests::parse_read_with_uid ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Compiling mailerboi v0.1.0 (/home/valerius/code/mailerboi/crates/mailerboi)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 3.02s
+     Running `target/debug/mailerboi --config crates/mailerboi/tests/fixtures/test-config.toon list-accounts`
+┌──────┬────────────────┬───────────┬──────┬──────┬─────────┐
+│ Name ┆ Email          ┆ Host      ┆ Port ┆ TLS  ┆ Default │
+╞══════╪════════════════╪═══════════╪══════╪══════╪═════════╡
+│ test ┆ test@localhost ┆ 127.0.0.1 ┆ 3993 ┆ true ┆ true    │
+└──────┴────────────────┴───────────┴──────┴──────┴─────────┘
