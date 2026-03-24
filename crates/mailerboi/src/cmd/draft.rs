@@ -7,21 +7,33 @@ use mailerboi_core::config::{
 use mailerboi_core::imap::connect;
 use mailerboi_core::output::OutputFormat;
 
-pub async fn run(
-    config_path_override: Option<PathBuf>,
-    account_name: Option<&str>,
-    _output: &OutputFormat,
-    insecure: bool,
-    subject: &str,
-    body: Option<String>,
-    body_file: Option<PathBuf>,
-    mailbox: &str,
-) -> Result<()> {
+pub struct DraftParams {
+    pub config_path_override: Option<PathBuf>,
+    pub account_name: Option<String>,
+    pub _output: OutputFormat,
+    pub insecure: bool,
+    pub subject: String,
+    pub body: Option<String>,
+    pub body_file: Option<PathBuf>,
+    pub mailbox: String,
+}
+
+pub async fn run(params: DraftParams) -> Result<()> {
+    let DraftParams {
+        config_path_override,
+        account_name,
+        _output,
+        insecure,
+        subject,
+        body,
+        body_file,
+        mailbox,
+    } = params;
     let path = config_path_override.unwrap_or_else(config_path);
-    let config =
-        load_config(&path).with_context(|| format!("Failed to load config from {}", path.display()))?;
+    let config = load_config(&path)
+        .with_context(|| format!("Failed to load config from {}", path.display()))?;
     let creds = load_credentials(&credentials_path()).context("Failed to load credentials")?;
-    let (name, account) = resolve_account(&config, account_name)?;
+    let (name, account) = resolve_account(&config, account_name.as_deref())?;
     let password = creds
         .passwords
         .get(name)
@@ -45,7 +57,7 @@ pub async fn run(
         .await
         .context("IMAP connection failed")?;
     session
-        .create_draft(&account.email, subject, &body_text, mailbox)
+        .create_draft(&account.email, &subject, &body_text, &mailbox)
         .await
         .context("Failed to create draft")?;
     session.logout().await.ok();

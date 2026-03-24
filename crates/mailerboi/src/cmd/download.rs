@@ -7,21 +7,33 @@ use mailerboi_core::config::{
 use mailerboi_core::imap::connect;
 use mailerboi_core::output::OutputFormat;
 
-pub async fn run(
-    config_path_override: Option<PathBuf>,
-    account_name: Option<&str>,
-    _output: &OutputFormat,
-    insecure: bool,
-    uid: u32,
-    dir: Option<PathBuf>,
-    file: Option<String>,
-    mailbox: &str,
-) -> Result<()> {
+pub struct DownloadParams {
+    pub config_path_override: Option<PathBuf>,
+    pub account_name: Option<String>,
+    pub _output: OutputFormat,
+    pub insecure: bool,
+    pub uid: u32,
+    pub dir: Option<PathBuf>,
+    pub file: Option<String>,
+    pub mailbox: String,
+}
+
+pub async fn run(params: DownloadParams) -> Result<()> {
+    let DownloadParams {
+        config_path_override,
+        account_name,
+        _output,
+        insecure,
+        uid,
+        dir,
+        file,
+        mailbox,
+    } = params;
     let path = config_path_override.unwrap_or_else(config_path);
-    let config =
-        load_config(&path).with_context(|| format!("Failed to load config from {}", path.display()))?;
+    let config = load_config(&path)
+        .with_context(|| format!("Failed to load config from {}", path.display()))?;
     let creds = load_credentials(&credentials_path()).context("Failed to load credentials")?;
-    let (name, account) = resolve_account(&config, account_name)?;
+    let (name, account) = resolve_account(&config, account_name.as_deref())?;
     let password = creds
         .passwords
         .get(name)
@@ -39,7 +51,7 @@ pub async fn run(
     std::fs::create_dir_all(&target_dir).context("Failed to create output directory")?;
 
     let saved = session
-        .download_attachments(uid, mailbox, &target_dir, file.as_deref())
+        .download_attachments(uid, &mailbox, &target_dir, file.as_deref())
         .await
         .context("Failed to download attachments")?;
     session.logout().await.ok();

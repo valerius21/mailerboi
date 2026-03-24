@@ -15,8 +15,8 @@ pub async fn run(
     mailbox: &str,
 ) -> Result<()> {
     let path = config_path_override.unwrap_or_else(config_path);
-    let config =
-        load_config(&path).with_context(|| format!("Failed to load config from {}", path.display()))?;
+    let config = load_config(&path)
+        .with_context(|| format!("Failed to load config from {}", path.display()))?;
     let creds = load_credentials(&credentials_path()).context("Failed to load credentials")?;
 
     let mut results = Vec::new();

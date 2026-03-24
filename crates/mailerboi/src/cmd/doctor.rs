@@ -14,8 +14,8 @@ pub async fn run(
     insecure: bool,
 ) -> Result<()> {
     let path = config_path_override.unwrap_or_else(config_path);
-    let config =
-        load_config(&path).with_context(|| format!("Failed to load config from {}", path.display()))?;
+    let config = load_config(&path)
+        .with_context(|| format!("Failed to load config from {}", path.display()))?;
 
     let creds_path = credentials_path();
     let creds = load_credentials(&creds_path)

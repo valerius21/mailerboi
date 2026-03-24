@@ -1,8 +1,8 @@
 pub mod accounts;
 pub mod check;
 pub mod delete;
-pub mod download;
 pub mod doctor;
+pub mod download;
 pub mod draft;
 pub mod flag;
 pub mod folders;

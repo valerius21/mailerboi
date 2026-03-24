@@ -19,8 +19,8 @@ pub async fn run(
     format: &ReadFormat,
 ) -> Result<()> {
     let path = config_path_override.unwrap_or_else(config_path);
-    let config =
-        load_config(&path).with_context(|| format!("Failed to load config from {}", path.display()))?;
+    let config = load_config(&path)
+        .with_context(|| format!("Failed to load config from {}", path.display()))?;
     let creds = load_credentials(&credentials_path()).context("Failed to load credentials")?;
     let (name, account) = resolve_account(&config, account_name)?;
     let password = creds
@@ -43,10 +43,16 @@ pub async fn run(
 
     match output {
         OutputFormat::Json => {
-            println!("{}", serde_json::to_string_pretty(&message).unwrap_or_default());
+            println!(
+                "{}",
+                serde_json::to_string_pretty(&message).unwrap_or_default()
+            );
         }
         OutputFormat::Toon => {
-            println!("{}", toon_format::encode_default(&message).unwrap_or_default());
+            println!(
+                "{}",
+                toon_format::encode_default(&message).unwrap_or_default()
+            );
         }
         OutputFormat::Table => match format {
             ReadFormat::Text => {
@@ -56,7 +62,11 @@ pub async fn run(
                     .first()
                     .map(|a| a.to_string())
                     .unwrap_or_default();
-                let subject = message.envelope.subject.as_deref().unwrap_or("(no subject)");
+                let subject = message
+                    .envelope
+                    .subject
+                    .as_deref()
+                    .unwrap_or("(no subject)");
                 let date = message.envelope.date.as_deref().unwrap_or("-");
                 println!("From: {}\nSubject: {}\nDate: {}\n", from, subject, date);
                 let body = message
@@ -67,7 +77,10 @@ pub async fn run(
                 println!("{}", body);
             }
             ReadFormat::Html => {
-                println!("{}", message.html_body.as_deref().unwrap_or("(no HTML body)"));
+                println!(
+                    "{}",
+                    message.html_body.as_deref().unwrap_or("(no HTML body)")
+                );
             }
             ReadFormat::Raw => {
                 println!("{}", String::from_utf8_lossy(&message.raw));
@@ -79,7 +92,11 @@ pub async fn run(
                     .first()
                     .map(|a| a.to_string())
                     .unwrap_or_default();
-                let subject = message.envelope.subject.as_deref().unwrap_or("(no subject)");
+                let subject = message
+                    .envelope
+                    .subject
+                    .as_deref()
+                    .unwrap_or("(no subject)");
                 let date = message.envelope.date.as_deref().unwrap_or("-");
                 println!("From: {}\nSubject: {}\nDate: {}", from, subject, date);
             }

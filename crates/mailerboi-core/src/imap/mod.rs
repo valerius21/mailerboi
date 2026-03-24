@@ -117,18 +117,20 @@ impl ImapSession {
         let range = format!("{}:{}", start, end);
 
         let fetches: Vec<_> = match self {
-            ImapSession::Tls(s) => s
-                .fetch(&range, "(UID ENVELOPE FLAGS)")
-                .await
-                .map_err(|e| ImapError::Protocol(e.to_string()))?
-                .collect()
-                .await,
-            ImapSession::Plain(s) => s
-                .fetch(&range, "(UID ENVELOPE FLAGS)")
-                .await
-                .map_err(|e| ImapError::Protocol(e.to_string()))?
-                .collect()
-                .await,
+            ImapSession::Tls(s) => {
+                s.fetch(&range, "(UID ENVELOPE FLAGS)")
+                    .await
+                    .map_err(|e| ImapError::Protocol(e.to_string()))?
+                    .collect()
+                    .await
+            }
+            ImapSession::Plain(s) => {
+                s.fetch(&range, "(UID ENVELOPE FLAGS)")
+                    .await
+                    .map_err(|e| ImapError::Protocol(e.to_string()))?
+                    .collect()
+                    .await
+            }
         };
 
         let mut envelopes: Vec<crate::domain::Envelope> = fetches
@@ -205,18 +207,20 @@ impl ImapSession {
         self.select(mailbox).await?;
 
         let fetches: Vec<_> = match self {
-            ImapSession::Tls(s) => s
-                .uid_fetch(uid.to_string(), "(RFC822 FLAGS)")
-                .await
-                .map_err(|e| ImapError::Protocol(e.to_string()))?
-                .collect()
-                .await,
-            ImapSession::Plain(s) => s
-                .uid_fetch(uid.to_string(), "(RFC822 FLAGS)")
-                .await
-                .map_err(|e| ImapError::Protocol(e.to_string()))?
-                .collect()
-                .await,
+            ImapSession::Tls(s) => {
+                s.uid_fetch(uid.to_string(), "(RFC822 FLAGS)")
+                    .await
+                    .map_err(|e| ImapError::Protocol(e.to_string()))?
+                    .collect()
+                    .await
+            }
+            ImapSession::Plain(s) => {
+                s.uid_fetch(uid.to_string(), "(RFC822 FLAGS)")
+                    .await
+                    .map_err(|e| ImapError::Protocol(e.to_string()))?
+                    .collect()
+                    .await
+            }
         };
 
         let fetch = fetches
@@ -354,18 +358,20 @@ impl ImapSession {
             .collect::<Vec<_>>()
             .join(",");
         let fetches: Vec<_> = match self {
-            ImapSession::Tls(s) => s
-                .uid_fetch(&uid_str, "(UID ENVELOPE FLAGS)")
-                .await
-                .map_err(|e| ImapError::Protocol(e.to_string()))?
-                .collect()
-                .await,
-            ImapSession::Plain(s) => s
-                .uid_fetch(&uid_str, "(UID ENVELOPE FLAGS)")
-                .await
-                .map_err(|e| ImapError::Protocol(e.to_string()))?
-                .collect()
-                .await,
+            ImapSession::Tls(s) => {
+                s.uid_fetch(&uid_str, "(UID ENVELOPE FLAGS)")
+                    .await
+                    .map_err(|e| ImapError::Protocol(e.to_string()))?
+                    .collect()
+                    .await
+            }
+            ImapSession::Plain(s) => {
+                s.uid_fetch(&uid_str, "(UID ENVELOPE FLAGS)")
+                    .await
+                    .map_err(|e| ImapError::Protocol(e.to_string()))?
+                    .collect()
+                    .await
+            }
         };
 
         Ok(fetches

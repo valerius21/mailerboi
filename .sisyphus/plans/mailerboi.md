@@ -1703,7 +1703,7 @@ Task 1 → Task 2/3 → Task 6/7 → Task 13 → Task 19 → Task 21 → Task 23
 
 ---
 
-- [ ] 22. Example Configs + devenv Polish
+- [x] 22. Example Configs + devenv Polish
 
   **What to do**:
   - Create `examples/config.toon` — example TOON config with 2 accounts (personal + work), commented explanations

@@ -18,7 +18,13 @@ async fn main() -> Result<()> {
             cmd::accounts::run(cli.config, &cli.output).await?;
         }
         Commands::Doctor => {
-            cmd::doctor::run(cli.config, cli.account.as_deref(), &cli.output, cli.insecure).await?;
+            cmd::doctor::run(
+                cli.config,
+                cli.account.as_deref(),
+                &cli.output,
+                cli.insecure,
+            )
+            .await?;
         }
         Commands::Check { mailbox } => {
             cmd::check::run(
@@ -31,8 +37,13 @@ async fn main() -> Result<()> {
             .await?;
         }
         Commands::Folders => {
-            cmd::folders::run(cli.config, cli.account.as_deref(), &cli.output, cli.insecure)
-                .await?;
+            cmd::folders::run(
+                cli.config,
+                cli.account.as_deref(),
+                &cli.output,
+                cli.insecure,
+            )
+            .await?;
         }
         Commands::List {
             mailbox,
@@ -77,11 +88,11 @@ async fn main() -> Result<()> {
             limit,
             mailbox,
         } => {
-            cmd::search::run(
-                cli.config,
-                cli.account.as_deref(),
-                &cli.output,
-                cli.insecure,
+            cmd::search::run(cmd::search::SearchParams {
+                config_path_override: cli.config,
+                account_name: cli.account,
+                output: cli.output,
+                insecure: cli.insecure,
                 unseen,
                 seen,
                 from,
@@ -89,8 +100,8 @@ async fn main() -> Result<()> {
                 since,
                 before,
                 limit,
-                &mailbox,
-            )
+                mailbox,
+            })
             .await?;
         }
         Commands::Move {
@@ -133,18 +144,18 @@ async fn main() -> Result<()> {
             unread,
             mailbox,
         } => {
-            cmd::flag::run(
-                cli.config,
-                cli.account.as_deref(),
-                &cli.output,
-                cli.insecure,
+            cmd::flag::run(cmd::flag::FlagParams {
+                config_path_override: cli.config,
+                account_name: cli.account,
+                _output: cli.output,
+                insecure: cli.insecure,
                 uids,
                 set,
                 unset,
                 read,
                 unread,
-                &mailbox,
-            )
+                mailbox,
+            })
             .await?;
         }
         Commands::Download {
@@ -153,16 +164,16 @@ async fn main() -> Result<()> {
             file,
             mailbox,
         } => {
-            cmd::download::run(
-                cli.config,
-                cli.account.as_deref(),
-                &cli.output,
-                cli.insecure,
+            cmd::download::run(cmd::download::DownloadParams {
+                config_path_override: cli.config,
+                account_name: cli.account,
+                _output: cli.output,
+                insecure: cli.insecure,
                 uid,
                 dir,
                 file,
-                &mailbox,
-            )
+                mailbox,
+            })
             .await?;
         }
         Commands::Draft {
@@ -171,16 +182,16 @@ async fn main() -> Result<()> {
             body_file,
             mailbox,
         } => {
-            cmd::draft::run(
-                cli.config,
-                cli.account.as_deref(),
-                &cli.output,
-                cli.insecure,
-                &subject,
+            cmd::draft::run(cmd::draft::DraftParams {
+                config_path_override: cli.config,
+                account_name: cli.account,
+                _output: cli.output,
+                insecure: cli.insecure,
+                subject,
                 body,
                 body_file,
-                &mailbox,
-            )
+                mailbox,
+            })
             .await?;
         }
     }
@@ -202,15 +213,8 @@ mod tests {
 
     #[test]
     fn parse_list_with_args() {
-        let cli = Cli::try_parse_from([
-            "mailerboi",
-            "list",
-            "--mailbox",
-            "Sent",
-            "--limit",
-            "5",
-        ])
-        .unwrap();
+        let cli = Cli::try_parse_from(["mailerboi", "list", "--mailbox", "Sent", "--limit", "5"])
+            .unwrap();
 
         if let Commands::List {
             mailbox,
@@ -240,8 +244,7 @@ mod tests {
     #[test]
     fn parse_search_filters() {
         let cli =
-            Cli::try_parse_from(["mailerboi", "search", "--unseen", "--from", "alice"])
-                .unwrap();
+            Cli::try_parse_from(["mailerboi", "search", "--unseen", "--from", "alice"]).unwrap();
 
         if let Commands::Search { unseen, from, .. } = cli.command {
             assert!(unseen);
