@@ -300,7 +300,7 @@ Task 1 → Task 2/3 → Task 6/7 → Task 13 → Task 19 → Task 21 → Task 23
 
 ---
 
-- [ ] 2. Spike: Validate toon-format Custom Struct Serde Roundtrip
+- [x] 2. Spike: Validate toon-format Custom Struct Serde Roundtrip
 
   **What to do**:
   - Add `toon-format = "0.4"` and `serde = { version = "1", features = ["derive"] }` to `mailerboi-core` Cargo.toml

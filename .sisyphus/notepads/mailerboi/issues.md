@@ -26,3 +26,27 @@ Validated in `mailerboi-core` tests:
 - Optional fields (`Option<String>`) for both `Some` and `None` preserved.
 
 Actionable decision for Task 6: use `toon_format::encode_default()` / `toon_format::decode_default()` directly for config parsing.
+
+## [2026-03-24] Spike Task 3: async-imap + GreenMail result
+PASS: `async-imap` + `async-native-tls` works against GreenMail for TLS (3993) and plain IMAP (3143), including login, `SELECT INBOX`, and `LOGOUT`.
+
+Working connection pattern used:
+- Dependencies:
+  - `async-imap = { version = "0.11.2", default-features = false, features = ["runtime-tokio"] }`
+  - `async-native-tls = { version = "0.5", default-features = false, features = ["runtime-tokio", "vendored"] }`
+  - `tokio = { version = "1", features = ["macros", "rt-multi-thread", "net"] }`
+- TLS flow:
+  1. `let tcp = tokio::net::TcpStream::connect("127.0.0.1:3993").await?;`
+  2. `let tls = async_native_tls::TlsConnector::new().danger_accept_invalid_certs(true).danger_accept_invalid_hostnames(true);`
+  3. `let stream = tls.connect("localhost", tcp).await?;`
+  4. `let mut session = async_imap::Client::new(stream).login(user, pass).await.map_err(|(e, _)| e)?;`
+  5. `session.select("INBOX").await?; session.logout().await?;`
+- Plain flow:
+  1. `let tcp = tokio::net::TcpStream::connect("127.0.0.1:3143").await?;`
+  2. `let mut session = async_imap::Client::new(tcp).login(user, pass).await.map_err(|(e, _)| e)?;`
+  3. `session.select("INBOX").await?; session.logout().await?;`
+
+Gotchas discovered:
+- `async-imap` must disable default features (`default-features = false`) when using `runtime-tokio`; otherwise both async-std and tokio runtimes are enabled and compile fails.
+- `async-native-tls` also needs `default-features = false` + `runtime-tokio` to accept `tokio::net::TcpStream` directly.
+- On this environment OpenSSL system headers are missing; `async-native-tls` needs `vendored` feature to compile successfully.

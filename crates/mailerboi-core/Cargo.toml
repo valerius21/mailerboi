@@ -6,3 +6,6 @@ edition.workspace = true
 [dependencies]
 serde = { version = "1", features = ["derive"] }
 toon-format = "0.4"
+async-imap = { version = "0.11.2", default-features = false, features = ["runtime-tokio"] }
+async-native-tls = { version = "0.5", default-features = false, features = ["runtime-tokio", "vendored"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "net"] }
