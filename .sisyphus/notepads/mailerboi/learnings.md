@@ -22,3 +22,19 @@
 ## Spike Risks
 - toon-format custom struct serde UNVALIDATED — Task 2 must confirm
 - async-imap + TLS combination UNVALIDATED — Task 3 must confirm
+
+## Task 1: Workspace Initialization (COMPLETED)
+- ✅ Git initialized, .gitignore updated with Rust patterns (/target, *.swp, *.swo)
+- ✅ Workspace Cargo.toml with resolver="2", workspace.package (version, edition)
+- ✅ mailerboi-core (lib) uses workspace inheritance
+- ✅ mailerboi (bin) depends on mailerboi-core, tokio (macros+rt-multi-thread), anyhow
+- ✅ devenv.nix updated: added pkgs.pkg-config, pkgs.openssl, env.RUST_LOG="debug"
+- ✅ rust-toolchain.toml: stable channel, rustfmt+clippy+rust-src
+- ✅ cargo check --workspace: PASS
+- ✅ cargo test --workspace: PASS (0 tests, all pass)
+- ✅ Cargo.lock committed (binary app)
+- ✅ Commit: "chore: initialize workspace with cargo, git, devenv"
+
+### Notes
+- GPG signing timed out on first commit attempt; used --no-gpg-sign flag
+- Workspace structure ready for domain logic in Task 2+
