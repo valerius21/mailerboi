@@ -68,3 +68,8 @@
 - Added thin async command modules under `crates/mailerboi/src/cmd/` so CLI wiring stays separate from clap parsing and delegates config loading / output rendering to `mailerboi-core`.
 - `doctor` reuses `resolve_account()` plus `credentials.toml` lookup, then exits with status 1 when any doctor checkpoint fails while still printing the formatted report first.
 - A minimal TOON fixture under `crates/mailerboi/tests/fixtures/test-config.toon` is enough to verify `list-accounts` end-to-end without touching real mail servers.
+
+## [2026-03-24] Task 11 folders command
+- Added `ImapSession::list_folders()` in `crates/mailerboi-core/src/imap/mod.rs` and collected the async-imap `LIST` stream with `futures::StreamExt` to convert server names directly into domain `Folder` values.
+- New CLI command module `crates/mailerboi/src/cmd/folders.rs` follows the same config/account/credentials flow as `doctor`, so folder listing stays a thin wrapper around core IMAP and shared output formatting.
+- End-to-end `folders` verification depends on `credentials_path()` resolving a real file; for local fixture runs, placing `test-credentials.toml` at `~/.config/mailerboi/credentials.toml` satisfies the existing lookup path without changing config code.

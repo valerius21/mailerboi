@@ -51,6 +51,37 @@ impl ImapSession {
         }
     }
 
+    pub async fn list_folders(&mut self) -> Result<Vec<crate::domain::Folder>> {
+        use futures::StreamExt;
+
+        let stream = match self {
+            ImapSession::Tls(s) => {
+                let names = s
+                    .list(Some(""), Some("*"))
+                    .await
+                    .map_err(|e| ImapError::Protocol(e.to_string()))?;
+                names.collect::<Vec<_>>().await
+            }
+            ImapSession::Plain(s) => {
+                let names = s
+                    .list(Some(""), Some("*"))
+                    .await
+                    .map_err(|e| ImapError::Protocol(e.to_string()))?;
+                names.collect::<Vec<_>>().await
+            }
+        };
+
+        Ok(stream
+            .into_iter()
+            .filter_map(|n| n.ok())
+            .map(|n| crate::domain::Folder {
+                name: n.name().to_string(),
+                delimiter: n.delimiter().map(|d| d.to_string()),
+                attributes: n.attributes().iter().map(|a| format!("{:?}", a)).collect(),
+            })
+            .collect())
+    }
+
     pub async fn logout(mut self) -> Result<()> {
         match self {
             ImapSession::Tls(ref mut s) => s

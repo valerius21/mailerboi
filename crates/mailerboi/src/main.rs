@@ -24,7 +24,8 @@ async fn main() -> Result<()> {
             println!("check {}: not yet implemented", mailbox);
         }
         Commands::Folders => {
-            println!("folders: not yet implemented");
+            cmd::folders::run(cli.config, cli.account.as_deref(), &cli.output, cli.insecure)
+                .await?;
         }
         Commands::List {
             mailbox,
