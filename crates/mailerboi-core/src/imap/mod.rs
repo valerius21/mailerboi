@@ -634,7 +634,7 @@ impl ImapSession {
                 dest = target_dir.join(new_name);
                 counter += 1;
             }
-            std::fs::write(&dest, &att.data).map_err(crate::error::MailerboiError::Io)?;
+            tokio::fs::write(&dest, &att.data).await.map_err(crate::error::MailerboiError::Io)?;
             saved.push(dest);
         }
         Ok(saved)
