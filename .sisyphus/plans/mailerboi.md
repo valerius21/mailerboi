@@ -796,7 +796,7 @@ Task 1 → Task 2/3 → Task 6/7 → Task 13 → Task 19 → Task 21 → Task 23
 
 ---
 
-- [ ] 8. Output Formatting — Table, TOON, JSON
+- [x] 8. Output Formatting — Table, TOON, JSON
 
   **What to do**:
   - Add deps: `comfy-table` (or `tabled`), `serde_json`, `toon-format`
