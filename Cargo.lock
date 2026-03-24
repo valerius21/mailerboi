@@ -1166,6 +1166,7 @@ dependencies = [
  "async-native-tls",
  "serde",
  "serde_json",
+ "thiserror 2.0.18",
  "tokio",
  "toon-format",
 ]

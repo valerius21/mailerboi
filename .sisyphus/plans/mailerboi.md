@@ -456,7 +456,7 @@ Task 1 → Task 2/3 → Task 6/7 → Task 13 → Task 19 → Task 21 → Task 23
 
 ---
 
-- [ ] 4. Domain Types — Folder, Envelope, Flag, Message
+- [x] 4. Domain Types — Folder, Envelope, Flag, Message
 
   **What to do**:
   - Create `crates/mailerboi-core/src/domain/mod.rs` with submodules
