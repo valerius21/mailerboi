@@ -639,7 +639,7 @@ Task 1 → Task 2/3 → Task 6/7 → Task 13 → Task 19 → Task 21 → Task 23
   - Message: `feat: add error types with thiserror`
   - Pre-commit: `cargo test --workspace`
 
-- [ ] 6. TOON Config Parsing + credentials.toml Loading
+- [x] 6. TOON Config Parsing + credentials.toml Loading
 
   **What to do**:
   - Add deps: `toon-format`, `toml`, `serde`, `dirs` (for XDG paths), `tracing`
@@ -717,7 +717,7 @@ Task 1 → Task 2/3 → Task 6/7 → Task 13 → Task 19 → Task 21 → Task 23
 
 ---
 
-- [ ] 7. IMAP Connection Manager with TLS
+- [x] 7. IMAP Connection Manager with TLS
 
   **What to do**:
   - Create `crates/mailerboi-core/src/imap/mod.rs` with:
