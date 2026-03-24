@@ -1018,7 +1018,7 @@ Task 1 → Task 2/3 → Task 6/7 → Task 13 → Task 19 → Task 21 → Task 23
 
 ---
 
-- [ ] 11. folders Command — List Mailboxes
+- [x] 11. folders Command — List Mailboxes
 
   **What to do**:
   - Add `list_folders()` to `crates/mailerboi-core/src/imap/mod.rs`:
