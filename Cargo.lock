@@ -878,6 +878,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "841d1cc9bed7f9236f321df977030373f4a4163ae1a7dbfe1a51a2c1a51d9100"
 
 [[package]]
+name = "hashify"
+version = "0.2.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "149e3ea90eb5a26ad354cfe3cb7f7401b9329032d0235f2687d03a35f30e5d4c"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "heck"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1191,13 +1202,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "mail-parser"
+version = "0.11.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f82a3d6522697593ba4c683e0a6ee5a40fee93bc1a525e3cc6eeb3da11fd8897"
+dependencies = [
+ "hashify",
+]
+
+[[package]]
 name = "mailerboi"
 version = "0.1.0"
 dependencies = [
  "anyhow",
  "clap",
  "mailerboi-core",
+ "serde_json",
  "tokio",
+ "toon-format",
  "tracing-subscriber",
 ]
 
@@ -1210,6 +1232,7 @@ dependencies = [
  "comfy-table",
  "dirs",
  "futures",
+ "mail-parser",
  "serde",
  "serde_json",
  "tempfile",

@@ -183,6 +183,103 @@ impl ImapSession {
         Ok(envelopes)
     }
 
+    pub async fn fetch_message(
+        &mut self,
+        uid: u32,
+        mailbox: &str,
+    ) -> Result<crate::domain::Message> {
+        use futures::StreamExt;
+        use mail_parser::MimeHeaders;
+
+        self.select(mailbox).await?;
+
+        let fetches: Vec<_> = match self {
+            ImapSession::Tls(s) => s
+                .uid_fetch(uid.to_string(), "(RFC822 FLAGS)")
+                .await
+                .map_err(|e| ImapError::Protocol(e.to_string()))?
+                .collect()
+                .await,
+            ImapSession::Plain(s) => s
+                .uid_fetch(uid.to_string(), "(RFC822 FLAGS)")
+                .await
+                .map_err(|e| ImapError::Protocol(e.to_string()))?
+                .collect()
+                .await,
+        };
+
+        let fetch = fetches
+            .into_iter()
+            .filter_map(|f| f.ok())
+            .next()
+            .ok_or(ImapError::MessageNotFound { uid })?;
+
+        let raw = fetch.body().unwrap_or(&[]).to_vec();
+        let flags: Vec<crate::domain::Flag> = fetch
+            .flags()
+            .map(|f| crate::domain::Flag::from_imap_str(&format!("{:?}", f)))
+            .collect();
+
+        let parsed = mail_parser::MessageParser::default().parse(&raw);
+
+        let (text_body, html_body, attachments, subject, from_addrs, date_str) =
+            if let Some(msg) = &parsed {
+                let text = msg.body_text(0).map(|s| s.to_string());
+                let html = msg.body_html(0).map(|s| s.to_string());
+
+                let mut atts = Vec::new();
+                for i in 0..msg.attachment_count() {
+                    if let Some(att) = msg.attachment(i as u32) {
+                        atts.push(crate::domain::Attachment {
+                            filename: att.attachment_name().unwrap_or("attachment").to_string(),
+                            content_type: att
+                                .content_type()
+                                .map(|ct| format!("{}/{}", ct.ctype(), ct.subtype().unwrap_or("")))
+                                .unwrap_or_default(),
+                            size: att.len(),
+                            data: att.contents().to_vec(),
+                        });
+                    }
+                }
+
+                let subj = msg.subject().map(|s| s.to_string());
+                let from = msg
+                    .from()
+                    .and_then(|f| f.first())
+                    .map(|a| crate::domain::Address {
+                        name: a.name().map(|n| n.to_string()),
+                        email: a.address().unwrap_or("").to_string(),
+                    });
+                let date = msg.date().map(|d| d.to_rfc3339());
+                (
+                    text,
+                    html,
+                    atts,
+                    subj,
+                    from.map(|a| vec![a]).unwrap_or_default(),
+                    date,
+                )
+            } else {
+                (None, None, vec![], None, vec![], None)
+            };
+
+        Ok(crate::domain::Message {
+            envelope: crate::domain::Envelope {
+                uid,
+                subject,
+                from: from_addrs,
+                to: vec![],
+                date: date_str,
+                flags,
+                has_attachments: !attachments.is_empty(),
+            },
+            text_body,
+            html_body,
+            attachments,
+            raw,
+        })
+    }
+
     pub async fn logout(mut self) -> Result<()> {
         match self {
             ImapSession::Tls(ref mut s) => s

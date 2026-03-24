@@ -48,10 +48,16 @@ async fn main() -> Result<()> {
             mailbox,
             format,
         } => {
-            println!(
-                "read uid={} mailbox={} format={:?}: not yet implemented",
-                uid, mailbox, format
-            );
+            cmd::read::run(
+                cli.config,
+                cli.account.as_deref(),
+                &cli.output,
+                cli.insecure,
+                uid,
+                &mailbox,
+                &format,
+            )
+            .await?;
         }
         Commands::Search {
             unseen,
