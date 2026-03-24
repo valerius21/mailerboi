@@ -1165,6 +1165,7 @@ dependencies = [
  "async-imap",
  "async-native-tls",
  "serde",
+ "serde_json",
  "tokio",
  "toon-format",
 ]

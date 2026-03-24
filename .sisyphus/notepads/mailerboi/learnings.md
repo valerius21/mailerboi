@@ -38,3 +38,8 @@
 ### Notes
 - GPG signing timed out on first commit attempt; used --no-gpg-sign flag
 - Workspace structure ready for domain logic in Task 2+
+
+## [2026-03-24] Task 4: domain types added
+- Added pure domain structs/enums under `crates/mailerboi-core/src/domain/` for `Folder`, `Address`, `Envelope`, `Flag`, `Attachment`, and `Message`.
+- `Attachment.data` and `Message.raw` use `#[serde(skip)]` so JSON roundtrip tests avoid serializing binary payloads by default.
+- `Flag` string helpers use IMAP system flag spellings (`\\Seen`, `\\Answered`, `\\Flagged`, `\\Deleted`, `\\Draft`) and preserve unknown labels via `Custom(String)`.

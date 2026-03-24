@@ -19,3 +19,7 @@
 ## Scope
 - IN: IMAP read/manage/search, draft creation (IMAP APPEND)
 - OUT: SMTP/send, OAuth2, TUI, shell completions, caching
+
+## [2026-03-24] Domain model
+- Keep mail domain types in `mailerboi-core::domain` as pure serde-friendly data structures with `Display` impls; no IMAP parsing or backend behavior lives in these types.
+- Represent mailbox flags with a small typed enum plus `Custom(String)` to preserve unknown server labels without losing roundtrip fidelity.

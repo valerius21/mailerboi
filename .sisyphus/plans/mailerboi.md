@@ -383,7 +383,7 @@ Task 1 → Task 2/3 → Task 6/7 → Task 13 → Task 19 → Task 21 → Task 23
 
 ---
 
-- [ ] 3. Spike: Validate async-imap + TLS Connection to GreenMail
+- [x] 3. Spike: Validate async-imap + TLS Connection to GreenMail
 
   **What to do**:
   - Add to `mailerboi-core` Cargo.toml: `async-imap = { version = "0.11", features = ["runtime-tokio"] }`, `async-native-tls = "0.5"`, `tokio = { version = "1", features = ["macros", "rt-multi-thread"] }`
