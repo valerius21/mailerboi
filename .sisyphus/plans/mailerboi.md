@@ -1212,7 +1212,7 @@ Task 1 → Task 2/3 → Task 6/7 → Task 13 → Task 19 → Task 21 → Task 23
 
 ---
 
-- [ ] 14. search Command — IMAP SEARCH with Filters
+- [x] 14. search Command — IMAP SEARCH with Filters
 
   **What to do**:
   - Add `search_messages(mailbox: &str, query: SearchQuery) -> Result<Vec<Envelope>>` to imap module:
@@ -1277,7 +1277,7 @@ Task 1 → Task 2/3 → Task 6/7 → Task 13 → Task 19 → Task 21 → Task 23
 
 ---
 
-- [ ] 15. check Command — Unread Count
+- [x] 15. check Command — Unread Count
 
   **What to do**:
   - Add `check_mailbox(mailbox: &str) -> Result<MailboxStatus>` to imap module:
@@ -1329,7 +1329,7 @@ Task 1 → Task 2/3 → Task 6/7 → Task 13 → Task 19 → Task 21 → Task 23
   - Message: `feat: add check command — unread count`
   - Pre-commit: `cargo test --workspace`
 
-- [ ] 16. flag Command — Mark Read/Unread/Flagged
+- [x] 16. flag Command — Mark Read/Unread/Flagged
 
   **What to do**:
   - Add `set_flags(uid: u32, mailbox: &str, flags: &[Flag], action: FlagAction) -> Result<()>` to imap module:
@@ -1388,7 +1388,7 @@ Task 1 → Task 2/3 → Task 6/7 → Task 13 → Task 19 → Task 21 → Task 23
 
 ---
 
-- [ ] 17. move Command — with MOVE/COPY Fallback
+- [x] 17. move Command — with MOVE/COPY Fallback
 
   **What to do**:
   - Add `move_message(uid: u32, source: &str, target: &str) -> Result<()>` to imap module:
@@ -1459,7 +1459,7 @@ Task 1 → Task 2/3 → Task 6/7 → Task 13 → Task 19 → Task 21 → Task 23
 
 ---
 
-- [ ] 18. delete Command
+- [x] 18. delete Command
 
   **What to do**:
   - Add `delete_message(uid: u32, mailbox: &str, force: bool) -> Result<()>` to imap module:
@@ -1513,7 +1513,7 @@ Task 1 → Task 2/3 → Task 6/7 → Task 13 → Task 19 → Task 21 → Task 23
 
 ---
 
-- [ ] 19. download Command — Attachments
+- [x] 19. download Command — Attachments
 
   **What to do**:
   - Add `download_attachments(uid: u32, mailbox: &str, target_dir: &Path, filename: Option<&str>) -> Result<Vec<PathBuf>>` to imap module:
@@ -1576,7 +1576,7 @@ Task 1 → Task 2/3 → Task 6/7 → Task 13 → Task 19 → Task 21 → Task 23
 
 ---
 
-- [ ] 20. draft Command — IMAP APPEND
+- [x] 20. draft Command — IMAP APPEND
 
   **What to do**:
   - Add `create_draft(account: &AccountConfig, subject: &str, body: &str) -> Result<u32>` to imap module:
