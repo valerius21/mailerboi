@@ -1,0 +1,9 @@
+[package]
+name = "mailerboi"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+mailerboi-core = { path = "../mailerboi-core" }
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+anyhow = "1"
