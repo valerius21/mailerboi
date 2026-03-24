@@ -21,7 +21,14 @@ async fn main() -> Result<()> {
             cmd::doctor::run(cli.config, cli.account.as_deref(), &cli.output, cli.insecure).await?;
         }
         Commands::Check { mailbox } => {
-            println!("check {}: not yet implemented", mailbox);
+            cmd::check::run(
+                cli.config,
+                cli.account.as_deref(),
+                &cli.output,
+                cli.insecure,
+                &mailbox,
+            )
+            .await?;
         }
         Commands::Folders => {
             cmd::folders::run(cli.config, cli.account.as_deref(), &cli.output, cli.insecure)
@@ -66,34 +73,57 @@ async fn main() -> Result<()> {
             subject,
             since,
             before,
-            recent,
+            recent: _,
             limit,
             mailbox,
         } => {
-            println!(
-                "search unseen={} seen={} from={:?} subject={:?} since={:?} before={:?} recent={:?} limit={} mailbox={}: not yet implemented",
-                unseen, seen, from, subject, since, before, recent, limit, mailbox
-            );
+            cmd::search::run(
+                cli.config,
+                cli.account.as_deref(),
+                &cli.output,
+                cli.insecure,
+                unseen,
+                seen,
+                from,
+                subject,
+                since,
+                before,
+                limit,
+                &mailbox,
+            )
+            .await?;
         }
         Commands::Move {
             uid,
             target,
             mailbox,
         } => {
-            println!(
-                "move uid={} to {} from {}: not yet implemented",
-                uid, target, mailbox
-            );
+            cmd::move_cmd::run(
+                cli.config,
+                cli.account.as_deref(),
+                &cli.output,
+                cli.insecure,
+                uid,
+                &target,
+                &mailbox,
+            )
+            .await?;
         }
         Commands::Delete {
             uid,
             force,
             mailbox,
         } => {
-            println!(
-                "delete uid={} force={} from {}: not yet implemented",
-                uid, force, mailbox
-            );
+            cmd::delete::run(
+                cli.config,
+                cli.account.as_deref(),
+                &cli.output,
+                cli.insecure,
+                uid,
+                force,
+                &mailbox,
+            )
+            .await?;
         }
         Commands::Flag {
             uids,
@@ -103,10 +133,19 @@ async fn main() -> Result<()> {
             unread,
             mailbox,
         } => {
-            println!(
-                "flag {:?} set={:?} unset={:?} read={} unread={} mailbox={}: not yet implemented",
-                uids, set, unset, read, unread, mailbox
-            );
+            cmd::flag::run(
+                cli.config,
+                cli.account.as_deref(),
+                &cli.output,
+                cli.insecure,
+                uids,
+                set,
+                unset,
+                read,
+                unread,
+                &mailbox,
+            )
+            .await?;
         }
         Commands::Download {
             uid,
@@ -114,10 +153,17 @@ async fn main() -> Result<()> {
             file,
             mailbox,
         } => {
-            println!(
-                "download uid={} dir={:?} file={:?} mailbox={}: not yet implemented",
-                uid, dir, file, mailbox
-            );
+            cmd::download::run(
+                cli.config,
+                cli.account.as_deref(),
+                &cli.output,
+                cli.insecure,
+                uid,
+                dir,
+                file,
+                &mailbox,
+            )
+            .await?;
         }
         Commands::Draft {
             subject,
@@ -125,10 +171,17 @@ async fn main() -> Result<()> {
             body_file,
             mailbox,
         } => {
-            println!(
-                "draft subject={} body={:?} body_file={:?} mailbox={}: not yet implemented",
-                subject, body, body_file, mailbox
-            );
+            cmd::draft::run(
+                cli.config,
+                cli.account.as_deref(),
+                &cli.output,
+                cli.insecure,
+                &subject,
+                body,
+                body_file,
+                &mailbox,
+            )
+            .await?;
         }
     }
 

@@ -1,5 +1,12 @@
 pub mod accounts;
+pub mod check;
+pub mod delete;
+pub mod download;
 pub mod doctor;
+pub mod draft;
+pub mod flag;
 pub mod folders;
 pub mod list;
+pub mod move_cmd;
 pub mod read;
+pub mod search;

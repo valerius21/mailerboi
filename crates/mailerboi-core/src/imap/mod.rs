@@ -27,6 +27,17 @@ pub struct DoctorReport {
     pub error: Option<String>,
 }
 
+#[derive(Debug, Default)]
+pub struct SearchQuery {
+    pub unseen: bool,
+    pub seen: bool,
+    pub from: Option<String>,
+    pub subject: Option<String>,
+    pub since: Option<String>,
+    pub before: Option<String>,
+    pub limit: u32,
+}
+
 impl DoctorReport {
     pub fn all_ok(&self) -> bool {
         self.dns_ok && self.tcp_ok && self.tls_ok && self.auth_ok && self.inbox_ok
@@ -278,6 +289,374 @@ impl ImapSession {
             attachments,
             raw,
         })
+    }
+
+    pub async fn search_messages(
+        &mut self,
+        mailbox: &str,
+        query: &SearchQuery,
+    ) -> Result<Vec<crate::domain::Envelope>> {
+        use futures::StreamExt;
+
+        self.select(mailbox).await?;
+
+        let mut criteria = Vec::new();
+        if query.unseen {
+            criteria.push("UNSEEN".to_string());
+        }
+        if query.seen {
+            criteria.push("SEEN".to_string());
+        }
+        if let Some(from) = &query.from {
+            criteria.push(format!("FROM \"{}\"", from));
+        }
+        if let Some(subj) = &query.subject {
+            criteria.push(format!("SUBJECT \"{}\"", subj));
+        }
+        if let Some(since) = &query.since {
+            criteria.push(format!("SINCE {}", since));
+        }
+        if let Some(before) = &query.before {
+            criteria.push(format!("BEFORE {}", before));
+        }
+        if criteria.is_empty() {
+            criteria.push("ALL".to_string());
+        }
+        let search_str = criteria.join(" ");
+
+        let uid_set: std::collections::HashSet<u32> = match self {
+            ImapSession::Tls(s) => s
+                .uid_search(&search_str)
+                .await
+                .map_err(|e| ImapError::Protocol(e.to_string()))?,
+            ImapSession::Plain(s) => s
+                .uid_search(&search_str)
+                .await
+                .map_err(|e| ImapError::Protocol(e.to_string()))?,
+        };
+
+        let limit = if query.limit == 0 {
+            20
+        } else {
+            query.limit as usize
+        };
+        let mut uids: Vec<u32> = uid_set.into_iter().collect();
+        uids.sort_unstable_by(|a, b| b.cmp(a));
+        uids.truncate(limit);
+
+        if uids.is_empty() {
+            return Ok(vec![]);
+        }
+
+        let uid_str = uids
+            .iter()
+            .map(|u| u.to_string())
+            .collect::<Vec<_>>()
+            .join(",");
+        let fetches: Vec<_> = match self {
+            ImapSession::Tls(s) => s
+                .uid_fetch(&uid_str, "(UID ENVELOPE FLAGS)")
+                .await
+                .map_err(|e| ImapError::Protocol(e.to_string()))?
+                .collect()
+                .await,
+            ImapSession::Plain(s) => s
+                .uid_fetch(&uid_str, "(UID ENVELOPE FLAGS)")
+                .await
+                .map_err(|e| ImapError::Protocol(e.to_string()))?
+                .collect()
+                .await,
+        };
+
+        Ok(fetches
+            .into_iter()
+            .filter_map(|f| f.ok())
+            .filter_map(|fetch| {
+                let env = fetch.envelope()?;
+                let uid = fetch.uid.unwrap_or(0);
+                let subject = env
+                    .subject
+                    .as_ref()
+                    .and_then(|s| std::str::from_utf8(s).ok())
+                    .map(|s| s.to_string());
+                let from = env
+                    .from
+                    .as_ref()
+                    .map(|addrs| {
+                        addrs
+                            .iter()
+                            .map(|a| crate::domain::Address {
+                                name: a
+                                    .name
+                                    .as_ref()
+                                    .and_then(|n| std::str::from_utf8(n).ok())
+                                    .map(|s| s.to_string()),
+                                email: format!(
+                                    "{}@{}",
+                                    a.mailbox
+                                        .as_ref()
+                                        .and_then(|m| std::str::from_utf8(m).ok())
+                                        .unwrap_or(""),
+                                    a.host
+                                        .as_ref()
+                                        .and_then(|h| std::str::from_utf8(h).ok())
+                                        .unwrap_or("")
+                                ),
+                            })
+                            .collect()
+                    })
+                    .unwrap_or_default();
+                Some(crate::domain::Envelope {
+                    uid,
+                    subject,
+                    from,
+                    to: vec![],
+                    date: None,
+                    flags: vec![],
+                    has_attachments: false,
+                })
+            })
+            .collect())
+    }
+
+    pub async fn check_mailbox_status(
+        &mut self,
+        mailbox: &str,
+    ) -> Result<crate::output::MailboxStatus> {
+        let status = match self {
+            ImapSession::Tls(s) => s
+                .status(mailbox, "(MESSAGES UNSEEN RECENT)")
+                .await
+                .map_err(|e| ImapError::Protocol(e.to_string()))?,
+            ImapSession::Plain(s) => s
+                .status(mailbox, "(MESSAGES UNSEEN RECENT)")
+                .await
+                .map_err(|e| ImapError::Protocol(e.to_string()))?,
+        };
+        Ok(crate::output::MailboxStatus {
+            account: String::new(),
+            mailbox: mailbox.to_string(),
+            total: status.exists,
+            unseen: status.unseen.unwrap_or(0),
+            recent: status.recent,
+        })
+    }
+
+    pub async fn set_flags(
+        &mut self,
+        uids: &[u32],
+        mailbox: &str,
+        flag_strs: &[String],
+        add: bool,
+    ) -> Result<()> {
+        use futures::StreamExt;
+
+        self.select(mailbox).await?;
+        let uid_str = uids
+            .iter()
+            .map(|u| u.to_string())
+            .collect::<Vec<_>>()
+            .join(",");
+        let flags_joined = flag_strs.join(" ");
+        let store_cmd = if add {
+            format!("+FLAGS ({})", flags_joined)
+        } else {
+            format!("-FLAGS ({})", flags_joined)
+        };
+        match self {
+            ImapSession::Tls(s) => {
+                let stream = s
+                    .uid_store(&uid_str, &store_cmd)
+                    .await
+                    .map_err(|e| ImapError::Protocol(e.to_string()))?;
+                let _: Vec<_> = stream.collect().await;
+            }
+            ImapSession::Plain(s) => {
+                let stream = s
+                    .uid_store(&uid_str, &store_cmd)
+                    .await
+                    .map_err(|e| ImapError::Protocol(e.to_string()))?;
+                let _: Vec<_> = stream.collect().await;
+            }
+        }
+        Ok(())
+    }
+
+    pub async fn move_message(&mut self, uid: u32, source: &str, target: &str) -> Result<()> {
+        use futures::StreamExt;
+
+        self.select(source).await?;
+
+        let caps = match self {
+            ImapSession::Tls(s) => s
+                .capabilities()
+                .await
+                .map_err(|e| ImapError::Protocol(e.to_string()))?,
+            ImapSession::Plain(s) => s
+                .capabilities()
+                .await
+                .map_err(|e| ImapError::Protocol(e.to_string()))?,
+        };
+
+        if caps.has_str("MOVE") {
+            match self {
+                ImapSession::Tls(s) => s
+                    .uid_mv(uid.to_string(), target)
+                    .await
+                    .map_err(|e| ImapError::Protocol(e.to_string()))?,
+                ImapSession::Plain(s) => s
+                    .uid_mv(uid.to_string(), target)
+                    .await
+                    .map_err(|e| ImapError::Protocol(e.to_string()))?,
+            }
+        } else {
+            match self {
+                ImapSession::Tls(s) => s
+                    .uid_copy(uid.to_string(), target)
+                    .await
+                    .map_err(|e| ImapError::Protocol(e.to_string()))?,
+                ImapSession::Plain(s) => s
+                    .uid_copy(uid.to_string(), target)
+                    .await
+                    .map_err(|e| ImapError::Protocol(e.to_string()))?,
+            }
+            let uid_str = uid.to_string();
+            match self {
+                ImapSession::Tls(s) => {
+                    let stream = s
+                        .uid_store(&uid_str, "+FLAGS (\\Deleted)")
+                        .await
+                        .map_err(|e| ImapError::Protocol(e.to_string()))?;
+                    let _: Vec<_> = stream.collect().await;
+                    let exp = s
+                        .expunge()
+                        .await
+                        .map_err(|e| ImapError::Protocol(e.to_string()))?;
+                    let _: Vec<_> = exp.collect().await;
+                }
+                ImapSession::Plain(s) => {
+                    let stream = s
+                        .uid_store(&uid_str, "+FLAGS (\\Deleted)")
+                        .await
+                        .map_err(|e| ImapError::Protocol(e.to_string()))?;
+                    let _: Vec<_> = stream.collect().await;
+                    let exp = s
+                        .expunge()
+                        .await
+                        .map_err(|e| ImapError::Protocol(e.to_string()))?;
+                    let _: Vec<_> = exp.collect().await;
+                }
+            }
+        }
+        Ok(())
+    }
+
+    pub async fn delete_message(&mut self, uid: u32, mailbox: &str, force: bool) -> Result<()> {
+        use futures::StreamExt;
+
+        if force {
+            self.select(mailbox).await?;
+            let uid_str = uid.to_string();
+            match self {
+                ImapSession::Tls(s) => {
+                    let stream = s
+                        .uid_store(&uid_str, "+FLAGS (\\Deleted)")
+                        .await
+                        .map_err(|e| ImapError::Protocol(e.to_string()))?;
+                    let _: Vec<_> = stream.collect().await;
+                    let exp = s
+                        .expunge()
+                        .await
+                        .map_err(|e| ImapError::Protocol(e.to_string()))?;
+                    let _: Vec<_> = exp.collect().await;
+                }
+                ImapSession::Plain(s) => {
+                    let stream = s
+                        .uid_store(&uid_str, "+FLAGS (\\Deleted)")
+                        .await
+                        .map_err(|e| ImapError::Protocol(e.to_string()))?;
+                    let _: Vec<_> = stream.collect().await;
+                    let exp = s
+                        .expunge()
+                        .await
+                        .map_err(|e| ImapError::Protocol(e.to_string()))?;
+                    let _: Vec<_> = exp.collect().await;
+                }
+            }
+        } else {
+            self.move_message(uid, mailbox, "Trash").await?;
+        }
+        Ok(())
+    }
+
+    pub async fn download_attachments(
+        &mut self,
+        uid: u32,
+        mailbox: &str,
+        target_dir: &std::path::Path,
+        filename_filter: Option<&str>,
+    ) -> Result<Vec<std::path::PathBuf>> {
+        let message = self.fetch_message(uid, mailbox).await?;
+        let mut saved = Vec::new();
+
+        if message.attachments.is_empty() {
+            return Ok(saved);
+        }
+
+        for att in &message.attachments {
+            if let Some(filter) = filename_filter {
+                if att.filename != filter {
+                    continue;
+                }
+            }
+            let mut dest = target_dir.join(&att.filename);
+            let mut counter = 1u32;
+            while dest.exists() {
+                let stem = std::path::Path::new(&att.filename)
+                    .file_stem()
+                    .and_then(|s| s.to_str())
+                    .unwrap_or("attachment");
+                let ext = std::path::Path::new(&att.filename)
+                    .extension()
+                    .and_then(|s| s.to_str())
+                    .unwrap_or("");
+                let new_name = if ext.is_empty() {
+                    format!("{}_{}", stem, counter)
+                } else {
+                    format!("{}_{}.{}", stem, counter, ext)
+                };
+                dest = target_dir.join(new_name);
+                counter += 1;
+            }
+            std::fs::write(&dest, &att.data).map_err(crate::error::MailerboiError::Io)?;
+            saved.push(dest);
+        }
+        Ok(saved)
+    }
+
+    pub async fn create_draft(
+        &mut self,
+        from_email: &str,
+        subject: &str,
+        body: &str,
+        drafts_folder: &str,
+    ) -> Result<()> {
+        let now = chrono::Utc::now().to_rfc2822();
+        let raw = format!(
+            "From: {}\r\nSubject: {}\r\nDate: {}\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n{}",
+            from_email, subject, now, body
+        );
+        match self {
+            ImapSession::Tls(s) => s
+                .append(drafts_folder, None, None, raw.as_bytes())
+                .await
+                .map_err(|e| ImapError::Protocol(e.to_string()))?,
+            ImapSession::Plain(s) => s
+                .append(drafts_folder, None, None, raw.as_bytes())
+                .await
+                .map_err(|e| ImapError::Protocol(e.to_string()))?,
+        }
+        Ok(())
     }
 
     pub async fn logout(mut self) -> Result<()> {

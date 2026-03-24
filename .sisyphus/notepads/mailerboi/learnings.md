@@ -78,3 +78,8 @@
 - Added `ImapSession::list_envelopes()` in `crates/mailerboi-core/src/imap/mod.rs`; because `async-imap::Session::fetch()` returns different opaque stream types for TLS vs plain sessions, each match arm must collect its stream before the results can be unified as a `Vec`.
 - Pagination uses IMAP sequence numbers only to choose the fetch window (`start:end`) and then returns domain `Envelope` values with UIDs preserved for downstream message operations.
 - New CLI wrapper `crates/mailerboi/src/cmd/list.rs` mirrors the existing folder/doctor command flow: load config, resolve account + password, connect, call core IMAP, print shared formatted output, then best-effort logout.
+
+## [2026-03-24] Task 14 search/check/flag/move/delete/download/draft commands
+- Added `SearchQuery` and seven new IMAP methods in `crates/mailerboi-core/src/imap/mod.rs`, keeping `async-imap` stream handling compatible with enum session variants by collecting per-branch before unifying outputs.
+- `status()` in `async-imap` v0.11 exposes mailbox totals as `exists` and `recent` as `u32` (not `Option<u32>`), so check reporting maps `total = exists`, `unseen = unseen.unwrap_or(0)`, `recent = recent`.
+- `append()` in `async-imap` v0.11 requires flags/date placeholders; passing `None, None` before message bytes enables draft creation while preserving simple text/plain composition.
