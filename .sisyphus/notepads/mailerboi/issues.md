@@ -50,3 +50,7 @@ Gotchas discovered:
 - `async-imap` must disable default features (`default-features = false`) when using `runtime-tokio`; otherwise both async-std and tokio runtimes are enabled and compile fails.
 - `async-native-tls` also needs `default-features = false` + `runtime-tokio` to accept `tokio::net::TcpStream` directly.
 - On this environment OpenSSL system headers are missing; `async-native-tls` needs `vendored` feature to compile successfully.
+
+## [2026-03-24] Final QA F3
+- `draft --subject "Test Draft" --body "Hello World"` fails against clean GreenMail with `APPEND failed. No such folder : Drafts`, so draft creation does not auto-create/select a Drafts mailbox.
+- Follow-on Draft mailbox checks also fail functionally: `list --mailbox Drafts` exits with `SELECT failed. No such mailbox`, while `check --mailbox Drafts` exits 0 but prints `No accounts checked.` instead of surfacing the missing mailbox error.

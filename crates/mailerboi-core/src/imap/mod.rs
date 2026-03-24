@@ -654,6 +654,11 @@ impl ImapSession {
             "From: {}\r\nSubject: {}\r\nDate: {}\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n{}",
             from_email, subject, now, body
         );
+        // Try to create the Drafts folder if it doesn't exist
+        let _ = match self {
+            ImapSession::Tls(s) => s.create(drafts_folder).await,
+            ImapSession::Plain(s) => s.create(drafts_folder).await,
+        };
         match self {
             ImapSession::Tls(s) => s
                 .append(drafts_folder, None, None, raw.as_bytes())

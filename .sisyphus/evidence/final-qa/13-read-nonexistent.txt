@@ -1,0 +1,5 @@
+Error: Failed to fetch message
+
+Caused by:
+    0: IMAP error: Message UID 99999 not found
+    1: Message UID 99999 not found

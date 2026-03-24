@@ -1,0 +1,10 @@
+┌─────────┬────────────────┐
+│ Check   ┆ Status         │
+╞═════════╪════════════════╡
+│ Account ┆ test@localhost │
+│ DNS     ┆ ok             │
+│ TCP     ┆ ok             │
+│ TLS     ┆ ok             │
+│ Auth    ┆ ok             │
+│ INBOX   ┆ ok             │
+└─────────┴────────────────┘

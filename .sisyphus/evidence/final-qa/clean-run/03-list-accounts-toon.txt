@@ -1,0 +1,2 @@
+[1]{name,email,host,port,tls,default}:
+  test,test@localhost,"127.0.0.1",3993,true,true

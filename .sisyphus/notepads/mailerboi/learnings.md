@@ -83,3 +83,7 @@
 - Added `SearchQuery` and seven new IMAP methods in `crates/mailerboi-core/src/imap/mod.rs`, keeping `async-imap` stream handling compatible with enum session variants by collecting per-branch before unifying outputs.
 - `status()` in `async-imap` v0.11 exposes mailbox totals as `exists` and `recent` as `u32` (not `Option<u32>`), so check reporting maps `total = exists`, `unseen = unseen.unwrap_or(0)`, `recent = recent`.
 - `append()` in `async-imap` v0.11 requires flags/date placeholders; passing `None, None` before message bytes enables draft creation while preserving simple text/plain composition.
+
+## [2026-03-24] Final QA F3
+- Restarting the `greenmail` Docker container resets the test account to an empty INBOX, which is required for the expected `check`, `list`, and `search --unseen` baseline outputs.
+- Against a clean GreenMail run, `list-accounts`, `doctor`, `check`, `folders`, `list`, and `search --unseen` all succeed with the expected output shapes; evidence is stored under `.sisyphus/evidence/final-qa/clean-run/`.

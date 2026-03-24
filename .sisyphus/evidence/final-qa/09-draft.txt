@@ -1,0 +1,5 @@
+Error: Failed to create draft
+
+Caused by:
+    0: IMAP error: IMAP protocol error: no response: code: Some(TryCreate), info: Some("APPEND failed. No such folder : Drafts")
+    1: IMAP protocol error: no response: code: Some(TryCreate), info: Some("APPEND failed. No such folder : Drafts")

@@ -1,0 +1,5 @@
+Error: Failed to load config from /nonexistent/config.toon
+
+Caused by:
+    0: Config error: Config file not found: /nonexistent/config.toon
+    1: Config file not found: /nonexistent/config.toon

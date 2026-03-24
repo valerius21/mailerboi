@@ -1,0 +1,5 @@
+Error: Failed to list envelopes
+
+Caused by:
+    0: IMAP error: IMAP protocol error: no response: code: None, info: Some("SELECT failed. No such mailbox")
+    1: IMAP protocol error: no response: code: None, info: Some("SELECT failed. No such mailbox")
