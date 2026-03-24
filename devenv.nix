@@ -32,6 +32,19 @@
     echo hello from $GREET
   '';
 
+  scripts.greenmail.exec = ''
+    docker rm -f greenmail 2>/dev/null || true
+    docker run -d --name greenmail \
+      -e GREENMAIL_OPTS='-Dgreenmail.setup.test.all -Dgreenmail.hostname=0.0.0.0 -Dgreenmail.auth.disabled -Dgreenmail.verbose' \
+      -p 3025:3025 -p 3110:3110 -p 3143:3143 -p 3465:3465 -p 3993:3993 -p 3995:3995 \
+      greenmail/standalone:2.1.2
+    echo "GreenMail started on ports 3143 (IMAP) and 3993 (IMAPS)"
+  '';
+
+  scripts.test.exec = "cargo test --workspace";
+
+  scripts.test-all.exec = "cargo test --workspace -- --include-ignored";
+
   # https://devenv.sh/basics/
   enterShell = ''
     hello         # Run scripts directly

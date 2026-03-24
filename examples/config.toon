@@ -1,0 +1,11 @@
+accounts.personal:
+  email: alice@example.com
+  host: imap.example.com
+  port: 993
+  tls: true
+  default: true
+accounts.work:
+  email: alice@company.com
+  host: imap.company.com
+  port: 993
+  tls: true
