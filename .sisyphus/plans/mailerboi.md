@@ -1137,7 +1137,7 @@ Task 1 → Task 2/3 → Task 6/7 → Task 13 → Task 19 → Task 21 → Task 23
 
 ---
 
-- [ ] 13. read Command — Fetch + Parse Email
+- [x] 13. read Command — Fetch + Parse Email
 
   **What to do**:
   - Add `mail-parser = "0.11"` to mailerboi-core deps
