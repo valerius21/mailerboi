@@ -11,3 +11,7 @@ clap = { version = "4", features = ["derive", "env"] }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 serde_json = "1"
 toon-format = "0.4"
+
+[dev-dependencies]
+assert_cmd = "2"
+predicates = "3"

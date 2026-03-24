@@ -1,0 +1,52 @@
+   Compiling mailerboi v0.1.0 (/home/valerius/code/mailerboi/crates/mailerboi)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.56s
+     Running unittests src/main.rs (target/debug/deps/mailerboi-52ed0b329724d1cf)
+
+running 5 tests
+test tests::parse_list_accounts ... ok
+test tests::parse_list_with_args ... ok
+test tests::parse_read_with_uid ... ok
+test tests::parse_search_filters ... ok
+test tests::parse_global_flags ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/integration.rs (target/debug/deps/integration-0605ff96d3ba4941)
+
+running 13 tests
+test check_shows_inbox_status ... ignored
+test doctor_all_checks_pass ... ignored
+test draft_creates_in_drafts_folder ... ignored
+test folders_json_output ... ignored
+test folders_shows_inbox ... ignored
+test list_empty_inbox ... ignored
+test search_unseen_returns_results_or_empty ... ignored
+test unknown_subcommand_exits_with_error ... ok
+test missing_config_file_exits_with_error ... ok
+test list_accounts_json_output ... ok
+test list_accounts_table_output ... ok
+test help_shows_all_subcommands ... ok
+test list_accounts_toon_output ... ok
+
+test result: ok. 6 passed; 0 failed; 7 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.11s
+     Running unittests src/main.rs (target/debug/deps/mailerboi-52ed0b329724d1cf)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 5 filtered out; finished in 0.00s
+
+     Running tests/integration.rs (target/debug/deps/integration-0605ff96d3ba4941)
+
+running 7 tests
+test doctor_all_checks_pass ... ok
+test check_shows_inbox_status ... ok
+test folders_shows_inbox ... ok
+test folders_json_output ... ok
+test list_empty_inbox ... ok
+test draft_creates_in_drafts_folder ... ok
+test search_unseen_returns_results_or_empty ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 6 filtered out; finished in 0.37s
+
