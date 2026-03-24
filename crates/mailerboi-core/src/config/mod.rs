@@ -1,47 +1,21 @@
 //! Configuration loading and account management.
 //!
-//! Supports TOON format config files and TOML credentials files.
+//! Supports TOML config files and TOML credentials files.
 //! Default paths follow XDG conventions (`~/.config/mailerboi/`).
 
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
-use serde::{Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Serialize};
 use tracing::warn;
 
 use crate::error::{ConfigError, Result};
 
 /// Parsed application configuration.
-#[derive(Debug, Clone, Serialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct AppConfig {
     /// Accounts keyed by their configured account name.
     pub accounts: HashMap<String, AccountConfig>,
-}
-
-#[derive(Debug, Deserialize)]
-struct AppConfigRepr {
-    #[serde(default)]
-    accounts: HashMap<String, AccountConfig>,
-    #[serde(flatten)]
-    dotted_accounts: HashMap<String, AccountConfig>,
-}
-
-impl<'de> Deserialize<'de> for AppConfig {
-    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let repr = AppConfigRepr::deserialize(deserializer)?;
-        let mut accounts = repr.accounts;
-
-        for (key, value) in repr.dotted_accounts {
-            if let Some(name) = key.strip_prefix("accounts.") {
-                accounts.insert(name.to_string(), value);
-            }
-        }
-
-        Ok(Self { accounts })
-    }
 }
 
 /// Connection settings for one configured IMAP account.
@@ -94,10 +68,10 @@ pub struct Credentials {
     pub passwords: HashMap<String, String>,
 }
 
-/// Loads an [`AppConfig`] from a TOON file.
+/// Loads an [`AppConfig`] from a TOML file.
 ///
 /// Returns [`crate::error::ConfigError::NotFound`] when `path` does not exist and
-/// [`crate::error::ConfigError::Parse`] when the file cannot be read or decoded.
+/// [`crate::error::ConfigError::Parse`] when the file cannot be read or parsed.
 pub fn load_config(path: &Path) -> Result<AppConfig> {
     if !path.exists() {
         return Err(ConfigError::NotFound {
@@ -109,8 +83,8 @@ pub fn load_config(path: &Path) -> Result<AppConfig> {
     let content = std::fs::read_to_string(path)
         .map_err(|e| ConfigError::Parse(format!("Failed to read {}: {}", path.display(), e)))?;
 
-    toon_format::decode_default(&content)
-        .map_err(|e| ConfigError::Parse(format!("TOON parse error: {}", e)).into())
+    toml::from_str(&content)
+        .map_err(|e| ConfigError::Parse(format!("TOML parse error: {}", e)).into())
 }
 
 /// Loads the default config file from [`config_path`].
@@ -122,7 +96,7 @@ pub fn load_config_default() -> Result<AppConfig> {
 /// Returns the config file path, honoring `MAILERBOI_CONFIG` first.
 ///
 /// ```text
-/// ~/.config/mailerboi/config.toon
+/// ~/.config/mailerboi/config.toml
 /// ```
 pub fn config_path() -> PathBuf {
     if let Ok(p) = std::env::var("MAILERBOI_CONFIG") {
@@ -133,7 +107,7 @@ pub fn config_path() -> PathBuf {
         .or_else(|| dirs::home_dir().map(|h| h.join(".config")))
         .unwrap_or_else(|| PathBuf::from("/etc"))
         .join("mailerboi")
-        .join("config.toon")
+        .join("config.toml")
 }
 
 /// Loads account passwords from a TOML credentials file.
@@ -233,18 +207,19 @@ mod tests {
 
     use super::*;
 
-    fn sample_toon_config() -> &'static str {
-        r#"accounts.personal:
-  email: alice@example.com
-  host: imap.example.com
-  port: 993
-  tls: true
-  default: true
-accounts.work:
-  email: alice@company.com
-  host: imap.company.com
-  port: 993
-  tls: true
+    fn sample_config_toml() -> &'static str {
+        r#"[accounts.personal]
+email = "alice@example.com"
+host = "imap.example.com"
+port = 993
+tls = true
+default = true
+
+[accounts.work]
+email = "alice@company.com"
+host = "imap.company.com"
+port = 993
+tls = true
 "#
     }
 
@@ -256,7 +231,7 @@ work = "workpass456"
 
     #[test]
     fn parse_multi_account_config() {
-        let config: AppConfig = toon_format::decode_default(sample_toon_config()).unwrap();
+        let config: AppConfig = toml::from_str(sample_config_toml()).unwrap();
         assert_eq!(config.accounts.len(), 2);
         let personal = config.accounts.get("personal").unwrap();
         assert_eq!(personal.email, "alice@example.com");
@@ -277,7 +252,7 @@ work = "workpass456"
 
     #[test]
     fn resolve_account_by_name() {
-        let config: AppConfig = toon_format::decode_default(sample_toon_config()).unwrap();
+        let config: AppConfig = toml::from_str(sample_config_toml()).unwrap();
         let (name, acc) = resolve_account(&config, Some("work")).unwrap();
         assert_eq!(name, "work");
         assert_eq!(acc.email, "alice@company.com");
@@ -285,7 +260,7 @@ work = "workpass456"
 
     #[test]
     fn resolve_account_default() {
-        let config: AppConfig = toon_format::decode_default(sample_toon_config()).unwrap();
+        let config: AppConfig = toml::from_str(sample_config_toml()).unwrap();
         let (name, acc) = resolve_account(&config, None).unwrap();
         assert_eq!(name, "personal");
         assert_eq!(acc.email, "alice@example.com");
@@ -293,7 +268,7 @@ work = "workpass456"
 
     #[test]
     fn resolve_account_not_found() {
-        let config: AppConfig = toon_format::decode_default(sample_toon_config()).unwrap();
+        let config: AppConfig = toml::from_str(sample_config_toml()).unwrap();
         let result = resolve_account(&config, Some("nonexistent"));
         assert!(result.is_err());
         let err = result.unwrap_err();
@@ -302,7 +277,7 @@ work = "workpass456"
 
     #[test]
     fn load_config_missing_file() {
-        let result = load_config(Path::new("/nonexistent/path/config.toon"));
+        let result = load_config(Path::new("/nonexistent/path/config.toml"));
         assert!(result.is_err());
         let err = result.unwrap_err();
         assert!(err.to_string().contains("not found") || err.to_string().contains("Config file"));
@@ -311,7 +286,7 @@ work = "workpass456"
     #[test]
     fn load_config_from_file() {
         let mut f = NamedTempFile::new().unwrap();
-        write!(f, "{}", sample_toon_config()).unwrap();
+        write!(f, "{}", sample_config_toml()).unwrap();
         let config = load_config(f.path()).unwrap();
         assert_eq!(config.accounts.len(), 2);
     }
@@ -332,11 +307,11 @@ work = "workpass456"
 
     #[test]
     fn default_values_applied() {
-        let minimal = r#"accounts.test:
-  email: test@example.com
-  host: imap.example.com
+        let minimal = r#"[accounts.test]
+email = "test@example.com"
+host = "imap.example.com"
 "#;
-        let config: AppConfig = toon_format::decode_default(minimal).unwrap();
+        let config: AppConfig = toml::from_str(minimal).unwrap();
         let acc = config.accounts.get("test").unwrap();
         assert_eq!(acc.port, 993);
         assert!(acc.tls);

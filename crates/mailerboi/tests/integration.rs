@@ -3,7 +3,7 @@ use predicates::prelude::*;
 use std::path::PathBuf;
 
 fn test_config() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/test-config.toon")
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/test-config.toml")
 }
 
 fn mailerboi() -> Command {
@@ -123,7 +123,7 @@ fn draft_creates_in_drafts_folder() {
 fn missing_config_file_exits_with_error() {
     let mut cmd = Command::cargo_bin("mailerboi").unwrap();
     cmd.arg("--config")
-        .arg("/nonexistent/config.toon")
+        .arg("/nonexistent/config.toml")
         .arg("list-accounts");
     cmd.assert().failure();
 }

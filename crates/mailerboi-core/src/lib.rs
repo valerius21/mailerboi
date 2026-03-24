@@ -4,7 +4,7 @@
 //!
 //! This crate provides the building blocks for managing multiple IMAP email accounts:
 //!
-//! - [`config`] parses TOON config files and TOML credentials.
+//! - [`config`] parses TOML config files and TOML credentials.
 //! - [`domain`] defines serializable email data types.
 //! - [`error`] exposes structured error types and the crate [`Result`] alias.
 //! - [`imap`] manages IMAP connections, mailbox operations, and message retrieval.
@@ -12,20 +12,20 @@
 //!
 //! # Config Format
 //!
-//! `mailerboi` uses [TOON format](https://github.com/toon-format/toon) for configuration:
+//! `mailerboi` uses TOML for configuration:
 //!
-//! ```text
-//! accounts.personal:
-//!   email: alice@example.com
-//!   host: imap.example.com
-//!   port: 993
-//!   tls: true
-//!   default: true
+//! ```toml
+//! [accounts.personal]
+//! email = "alice@example.com"
+//! host = "imap.example.com"
+//! port = 993
+//! tls = true
+//! default = true
 //! ```
 //!
 //! Credentials are stored separately in `credentials.toml`:
 //!
-//! ```text
+//! ```toml
 //! personal = "app-password-here"
 //! ```
 //!

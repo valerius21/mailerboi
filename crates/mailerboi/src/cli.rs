@@ -6,7 +6,7 @@ use mailerboi_core::output::OutputFormat;
 #[derive(Parser, Debug)]
 #[command(name = "mailerboi", about = "Multi-account IMAP email CLI", version)]
 pub struct Cli {
-    /// Path to config file (default: ~/.config/mailerboi/config.toon)
+    /// Path to config file (default: ~/.config/mailerboi/config.toml)
     #[arg(short, long, global = true, env = "MAILERBOI_CONFIG")]
     pub config: Option<PathBuf>,
 
