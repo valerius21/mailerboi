@@ -1070,7 +1070,7 @@ Task 1 → Task 2/3 → Task 6/7 → Task 13 → Task 19 → Task 21 → Task 23
 
 ---
 
-- [ ] 12. list Command — Envelope Listing
+- [x] 12. list Command — Envelope Listing
 
   **What to do**:
   - Add `list_envelopes(mailbox: &str, limit: u32, page: u32) -> Result<Vec<Envelope>>` to imap module:
