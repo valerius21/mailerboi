@@ -1,3 +1,8 @@
+//! IMAP connection management and mailbox operations.
+//!
+//! Supports both TLS (port 993) and plain (port 143) IMAP connections.
+//! All operations use UIDs for stable message references.
+
 use std::net::ToSocketAddrs;
 
 use async_native_tls::TlsConnector;
@@ -11,34 +16,54 @@ use crate::error::{ImapError, Result};
 type TlsSession = async_imap::Session<async_native_tls::TlsStream<TcpStream>>;
 type PlainSession = async_imap::Session<TcpStream>;
 
+/// An authenticated IMAP session over TLS or plain TCP.
 pub enum ImapSession {
+    /// A TLS-protected IMAP session.
     Tls(TlsSession),
+    /// A plain-text IMAP session.
     Plain(PlainSession),
 }
 
+/// Connectivity and mailbox health checks for one account.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct DoctorReport {
+    /// Account email address used for the check.
     pub account: String,
+    /// DNS resolution succeeded for the configured host.
     pub dns_ok: bool,
+    /// A TCP connection to the IMAP server succeeded.
     pub tcp_ok: bool,
+    /// TLS negotiation succeeded, or plain IMAP was intentionally used.
     pub tls_ok: bool,
+    /// Authentication with the supplied credentials succeeded.
     pub auth_ok: bool,
+    /// Selecting `INBOX` succeeded after login.
     pub inbox_ok: bool,
+    /// First failure encountered during the diagnostic run.
     pub error: Option<String>,
 }
 
+/// Search filters for [`ImapSession::search_messages`].
 #[derive(Debug, Default)]
 pub struct SearchQuery {
+    /// Restrict results to unread messages.
     pub unseen: bool,
+    /// Restrict results to read messages.
     pub seen: bool,
+    /// Match sender addresses containing this string.
     pub from: Option<String>,
+    /// Match subjects containing this string.
     pub subject: Option<String>,
+    /// Match messages on or after an IMAP date value.
     pub since: Option<String>,
+    /// Match messages before an IMAP date value.
     pub before: Option<String>,
+    /// Maximum number of results to return; `0` falls back to an internal default.
     pub limit: u32,
 }
 
 impl DoctorReport {
+    /// Returns `true` when every diagnostic check succeeded.
     pub fn all_ok(&self) -> bool {
         self.dns_ok && self.tcp_ok && self.tls_ok && self.auth_ok && self.inbox_ok
     }
@@ -49,6 +74,9 @@ fn server_addr(config: &AccountConfig) -> String {
 }
 
 impl ImapSession {
+    /// Selects a mailbox and returns its server status.
+    ///
+    /// Returns [`ImapError::Protocol`] if the server rejects the request.
     pub async fn select(&mut self, mailbox: &str) -> Result<async_imap::types::Mailbox> {
         match self {
             ImapSession::Tls(s) => s
@@ -62,6 +90,9 @@ impl ImapSession {
         }
     }
 
+    /// Lists folders visible to the authenticated account.
+    ///
+    /// Returns [`ImapError::Protocol`] if the `LIST` command fails.
     pub async fn list_folders(&mut self) -> Result<Vec<crate::domain::Folder>> {
         use futures::StreamExt;
 
@@ -93,6 +124,10 @@ impl ImapSession {
             .collect())
     }
 
+    /// Lists message envelopes for one mailbox page.
+    ///
+    /// `limit` and `page` are clamped to at least `1`. Returns
+    /// [`ImapError::Protocol`] if selection or fetching fails.
     pub async fn list_envelopes(
         &mut self,
         mailbox: &str,
@@ -196,6 +231,10 @@ impl ImapSession {
         Ok(envelopes)
     }
 
+    /// Fetches one message by UID, including bodies and attachments.
+    ///
+    /// Returns [`ImapError::MessageNotFound`] when the UID is missing and
+    /// [`ImapError::Protocol`] when IMAP fetching fails.
     pub async fn fetch_message(
         &mut self,
         uid: u32,
@@ -295,6 +334,10 @@ impl ImapSession {
         })
     }
 
+    /// Searches a mailbox and returns matching envelopes.
+    ///
+    /// Empty criteria default to `ALL`. Returns [`ImapError::Protocol`] if the
+    /// search or fetch commands fail.
     pub async fn search_messages(
         &mut self,
         mailbox: &str,
@@ -425,6 +468,9 @@ impl ImapSession {
             .collect())
     }
 
+    /// Reads message counts for a mailbox.
+    ///
+    /// Returns [`ImapError::Protocol`] if the server rejects the status query.
     pub async fn check_mailbox_status(
         &mut self,
         mailbox: &str,
@@ -448,6 +494,10 @@ impl ImapSession {
         })
     }
 
+    /// Adds or removes flags for the given UIDs.
+    ///
+    /// When `add` is `true`, flags are added; otherwise they are removed.
+    /// Returns [`ImapError::Protocol`] if the store command fails.
     pub async fn set_flags(
         &mut self,
         uids: &[u32],
@@ -488,6 +538,10 @@ impl ImapSession {
         Ok(())
     }
 
+    /// Moves a message to another mailbox.
+    ///
+    /// Falls back to copy-plus-delete when the server lacks `MOVE` support.
+    /// Returns [`ImapError::Protocol`] if any IMAP command fails.
     pub async fn move_message(&mut self, uid: u32, source: &str, target: &str) -> Result<()> {
         use futures::StreamExt;
 
@@ -557,6 +611,11 @@ impl ImapSession {
         Ok(())
     }
 
+    /// Deletes a message from a mailbox.
+    ///
+    /// When `force` is `false`, the message is moved to `Trash`; otherwise it is
+    /// marked deleted and expunged. Returns [`ImapError::Protocol`] if the server
+    /// rejects the operation.
     pub async fn delete_message(&mut self, uid: u32, mailbox: &str, force: bool) -> Result<()> {
         use futures::StreamExt;
 
@@ -595,6 +654,11 @@ impl ImapSession {
         Ok(())
     }
 
+    /// Saves matching attachments from one message into `target_dir`.
+    ///
+    /// Existing filenames are de-duplicated by appending a numeric suffix.
+    /// Returns [`ImapError::MessageNotFound`], [`ImapError::Protocol`], or
+    /// [`crate::error::MailerboiError::Io`] if writing a file fails.
     pub async fn download_attachments(
         &mut self,
         uid: u32,
@@ -642,6 +706,9 @@ impl ImapSession {
         Ok(saved)
     }
 
+    /// Appends a simple plain-text draft message to `drafts_folder`.
+    ///
+    /// Returns [`ImapError::Protocol`] if folder creation or append fails.
     pub async fn create_draft(
         &mut self,
         from_email: &str,
@@ -672,6 +739,9 @@ impl ImapSession {
         Ok(())
     }
 
+    /// Logs out and closes the IMAP session.
+    ///
+    /// Returns [`ImapError::Protocol`] if logout fails.
     pub async fn logout(mut self) -> Result<()> {
         match self {
             ImapSession::Tls(ref mut s) => s
@@ -687,6 +757,11 @@ impl ImapSession {
 }
 
 #[instrument(skip(password))]
+/// Connects to an IMAP server and authenticates the configured account.
+///
+/// Uses implicit TLS when [`AccountConfig::tls`] is enabled without STARTTLS.
+/// Returns [`ImapError::ConnectionFailed`], [`ImapError::Tls`],
+/// [`ImapError::AuthFailed`], or [`ImapError::Protocol`] on failure.
 pub async fn connect(config: &AccountConfig, password: &str) -> Result<ImapSession> {
     let addr = server_addr(config);
     debug!("Connecting to {}", addr);
@@ -739,11 +814,16 @@ pub async fn connect(config: &AccountConfig, password: &str) -> Result<ImapSessi
     }
 }
 
+/// Logs out from an IMAP session.
 pub async fn disconnect(session: ImapSession) -> Result<()> {
     session.logout().await
 }
 
 #[instrument(skip(password))]
+/// Runs connectivity and login diagnostics for one account.
+///
+/// The returned [`DoctorReport`] records each step and captures the first error
+/// message instead of returning early with a [`Result`].
 pub async fn doctor(config: &AccountConfig, password: &str) -> DoctorReport {
     let mut report = DoctorReport {
         account: config.email.clone(),

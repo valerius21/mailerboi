@@ -1,3 +1,10 @@
+//! Output formatting for CLI display.
+//!
+//! Supports three output formats:
+//! - [`OutputFormat::Table`] - human-readable tables via `comfy-table`
+//! - [`OutputFormat::Json`] - machine-readable JSON via `serde_json`
+//! - [`OutputFormat::Toon`] - token-efficient TOON format
+
 use comfy_table::{presets::UTF8_FULL_CONDENSED, Table};
 use serde::{Deserialize, Serialize};
 
@@ -5,12 +12,16 @@ use crate::config::AccountConfig;
 use crate::domain::{Envelope, Folder, Message};
 use crate::imap::DoctorReport;
 
+/// Output format selected for a CLI command.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum OutputFormat {
     #[default]
+    /// Render human-friendly tables or plain text.
     Table,
+    /// Render pretty-printed JSON.
     Json,
+    /// Render TOON for compact structured output.
     Toon,
 }
 
@@ -40,15 +51,22 @@ impl std::fmt::Display for OutputFormat {
     }
 }
 
+/// Message counts for one account and mailbox.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct MailboxStatus {
+    /// Account name or email label shown in command output.
     pub account: String,
+    /// Mailbox that was checked.
     pub mailbox: String,
+    /// Total number of messages.
     pub total: u32,
+    /// Number of unread messages.
     pub unseen: u32,
+    /// Number of recent messages reported by the server.
     pub recent: u32,
 }
 
+/// Formats folder listings in the requested [`OutputFormat`].
 pub fn format_folders(folders: &[Folder], format: &OutputFormat) -> String {
     match format {
         OutputFormat::Table => {
@@ -74,6 +92,7 @@ pub fn format_folders(folders: &[Folder], format: &OutputFormat) -> String {
     }
 }
 
+/// Formats message envelopes in the requested [`OutputFormat`].
 pub fn format_envelopes(envelopes: &[Envelope], format: &OutputFormat) -> String {
     match format {
         OutputFormat::Table => {
@@ -114,6 +133,7 @@ pub fn format_envelopes(envelopes: &[Envelope], format: &OutputFormat) -> String
     }
 }
 
+/// Formats one fetched message in the requested [`OutputFormat`].
 pub fn format_message(message: &Message, format: &OutputFormat) -> String {
     match format {
         OutputFormat::Table => {
@@ -145,6 +165,7 @@ pub fn format_message(message: &Message, format: &OutputFormat) -> String {
     }
 }
 
+/// Formats mailbox status checks in the requested [`OutputFormat`].
 pub fn format_check(checks: &[MailboxStatus], format: &OutputFormat) -> String {
     match format {
         OutputFormat::Table => {
@@ -172,6 +193,25 @@ pub fn format_check(checks: &[MailboxStatus], format: &OutputFormat) -> String {
     }
 }
 
+/// Formats configured accounts in the requested [`OutputFormat`].
+///
+/// ```no_run
+/// # use mailerboi_core::config::AccountConfig;
+/// # use mailerboi_core::output::{format_accounts, OutputFormat};
+/// let account = AccountConfig {
+///     email: "alice@example.com".to_string(),
+///     display_name: Some("Alice".to_string()),
+///     host: "imap.example.com".to_string(),
+///     port: 993,
+///     tls: true,
+///     starttls: false,
+///     insecure: false,
+///     default_mailbox: "INBOX".to_string(),
+///     default: true,
+/// };
+/// let rendered = format_accounts(&[("personal", &account)], &OutputFormat::Json);
+/// assert!(rendered.contains("personal"));
+/// ```
 pub fn format_accounts(accounts: &[(&str, &AccountConfig)], format: &OutputFormat) -> String {
     #[derive(Serialize)]
     struct AccountRow<'a> {
@@ -222,6 +262,7 @@ pub fn format_accounts(accounts: &[(&str, &AccountConfig)], format: &OutputForma
     }
 }
 
+/// Formats a diagnostic [`DoctorReport`] in the requested [`OutputFormat`].
 pub fn format_doctor(report: &DoctorReport, format: &OutputFormat) -> String {
     match format {
         OutputFormat::Table => {

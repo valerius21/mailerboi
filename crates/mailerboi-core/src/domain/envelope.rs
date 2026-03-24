@@ -1,9 +1,13 @@
+//! Message envelope and address types.
+
 use super::flag::Flag;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
+/// A named email address.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Address {
+    /// Display name, when present in the message headers.
     pub name: Option<String>,
     pub email: String,
 }
@@ -18,14 +22,22 @@ impl fmt::Display for Address {
     }
 }
 
+/// Summary metadata for one message.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Envelope {
+    /// Stable IMAP UID for the message.
     pub uid: u32,
+    /// Decoded `Subject` header.
     pub subject: Option<String>,
+    /// Parsed sender addresses.
     pub from: Vec<Address>,
+    /// Parsed recipient addresses when available.
     pub to: Vec<Address>,
+    /// Message date as a display-ready string.
     pub date: Option<String>,
+    /// IMAP flags currently set on the message.
     pub flags: Vec<Flag>,
+    /// Indicates whether attachment metadata is known to exist.
     pub has_attachments: bool,
 }
 

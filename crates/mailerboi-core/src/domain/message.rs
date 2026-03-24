@@ -1,13 +1,20 @@
+//! Full message payloads and attachment metadata.
+
 use super::envelope::Envelope;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
+/// One attachment extracted from a message body.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Attachment {
+    /// Attachment filename from MIME metadata.
     pub filename: String,
+    /// Attachment MIME type.
     pub content_type: String,
+    /// Attachment size in bytes.
     pub size: usize,
     #[serde(skip)]
+    /// Raw attachment bytes, skipped during serialization.
     pub data: Vec<u8>,
 }
 
@@ -21,13 +28,19 @@ impl fmt::Display for Attachment {
     }
 }
 
+/// A fully fetched message with decoded bodies and attachments.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Message {
+    /// Envelope metadata for the message.
     pub envelope: Envelope,
+    /// Plain-text body, if available.
     pub text_body: Option<String>,
+    /// HTML body, if available.
     pub html_body: Option<String>,
+    /// Attachments extracted from the MIME structure.
     pub attachments: Vec<Attachment>,
     #[serde(skip)]
+    /// Raw RFC822 message bytes, skipped during serialization.
     pub raw: Vec<u8>,
 }
 

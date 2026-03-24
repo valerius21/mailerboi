@@ -1,3 +1,7 @@
+//! mailerboi - Multi-account IMAP email CLI.
+//!
+//! Run `mailerboi --help` for usage information.
+
 use anyhow::Result;
 use clap::Parser;
 use tracing_subscriber::{fmt, EnvFilter};

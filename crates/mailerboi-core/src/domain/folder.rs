@@ -1,10 +1,16 @@
+//! Mailbox folder metadata.
+
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
+/// One mailbox folder returned by the IMAP server.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Folder {
+    /// Server-visible mailbox name.
     pub name: String,
+    /// Hierarchy delimiter used for nested folders, if the server reports one.
     pub delimiter: Option<String>,
+    /// Raw IMAP folder attributes such as `\\Sent` or `\\HasNoChildren`.
     pub attributes: Vec<String>,
 }
 

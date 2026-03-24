@@ -1,3 +1,8 @@
+//! Configuration loading and account management.
+//!
+//! Supports TOON format config files and TOML credentials files.
+//! Default paths follow XDG conventions (`~/.config/mailerboi/`).
+
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
@@ -6,8 +11,10 @@ use tracing::warn;
 
 use crate::error::{ConfigError, Result};
 
+/// Parsed application configuration.
 #[derive(Debug, Clone, Serialize, PartialEq)]
 pub struct AppConfig {
+    /// Accounts keyed by their configured account name.
     pub accounts: HashMap<String, AccountConfig>,
 }
 
@@ -37,23 +44,33 @@ impl<'de> Deserialize<'de> for AppConfig {
     }
 }
 
+/// Connection settings for one configured IMAP account.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct AccountConfig {
+    /// Login email address used for IMAP authentication.
     pub email: String,
     #[serde(default)]
+    /// Optional display name used when composing messages.
     pub display_name: Option<String>,
+    /// IMAP server hostname.
     pub host: String,
     #[serde(default = "default_port")]
+    /// IMAP server port.
     pub port: u16,
     #[serde(default = "default_tls")]
+    /// Enables implicit TLS, typically on port `993`.
     pub tls: bool,
     #[serde(default)]
+    /// Requests STARTTLS when supported by the server.
     pub starttls: bool,
     #[serde(default)]
+    /// Skips certificate and hostname validation for TLS connections.
     pub insecure: bool,
     #[serde(default = "default_mailbox")]
+    /// Mailbox used when a command does not specify one.
     pub default_mailbox: String,
     #[serde(default)]
+    /// Marks this account as the preferred default.
     pub default: bool,
 }
 
@@ -69,12 +86,18 @@ fn default_mailbox() -> String {
     "INBOX".to_string()
 }
 
+/// Passwords loaded from `credentials.toml`.
 #[derive(Debug, Clone, Deserialize)]
 pub struct Credentials {
     #[serde(flatten)]
+    /// Account passwords keyed by account name.
     pub passwords: HashMap<String, String>,
 }
 
+/// Loads an [`AppConfig`] from a TOON file.
+///
+/// Returns [`crate::error::ConfigError::NotFound`] when `path` does not exist and
+/// [`crate::error::ConfigError::Parse`] when the file cannot be read or decoded.
 pub fn load_config(path: &Path) -> Result<AppConfig> {
     if !path.exists() {
         return Err(ConfigError::NotFound {
@@ -90,11 +113,17 @@ pub fn load_config(path: &Path) -> Result<AppConfig> {
         .map_err(|e| ConfigError::Parse(format!("TOON parse error: {}", e)).into())
 }
 
+/// Loads the default config file from [`config_path`].
 pub fn load_config_default() -> Result<AppConfig> {
     let path = config_path();
     load_config(&path)
 }
 
+/// Returns the config file path, honoring `MAILERBOI_CONFIG` first.
+///
+/// ```text
+/// ~/.config/mailerboi/config.toon
+/// ```
 pub fn config_path() -> PathBuf {
     if let Ok(p) = std::env::var("MAILERBOI_CONFIG") {
         return PathBuf::from(p);
@@ -107,6 +136,11 @@ pub fn config_path() -> PathBuf {
         .join("config.toon")
 }
 
+/// Loads account passwords from a TOML credentials file.
+///
+/// Returns [`crate::error::ConfigError::CredentialsNotFound`] when `path` does
+/// not exist and [`crate::error::ConfigError::Parse`] when the file cannot be
+/// read or parsed.
 pub fn load_credentials(path: &Path) -> Result<Credentials> {
     if !path.exists() {
         return Err(ConfigError::CredentialsNotFound {
@@ -138,6 +172,11 @@ pub fn load_credentials(path: &Path) -> Result<Credentials> {
         .map_err(|e| ConfigError::Parse(format!("TOML parse error: {}", e)).into())
 }
 
+/// Returns the credentials file path, honoring `MAILERBOI_CREDENTIALS` first.
+///
+/// ```text
+/// ~/.config/mailerboi/credentials.toml
+/// ```
 pub fn credentials_path() -> PathBuf {
     if let Ok(p) = std::env::var("MAILERBOI_CREDENTIALS") {
         return PathBuf::from(p);
@@ -150,6 +189,11 @@ pub fn credentials_path() -> PathBuf {
         .join("credentials.toml")
 }
 
+/// Resolves an account by name or falls back to the default account.
+///
+/// When `name` is `None`, the first account marked as default is preferred,
+/// then the first configured account. Returns
+/// [`crate::error::ConfigError::AccountNotFound`] if no matching account exists.
 pub fn resolve_account<'a>(
     config: &'a AppConfig,
     name: Option<&str>,

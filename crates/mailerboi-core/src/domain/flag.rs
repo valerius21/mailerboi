@@ -1,17 +1,27 @@
+//! IMAP message flags.
+
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
+/// An IMAP system flag or provider-specific custom flag.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum Flag {
+    /// The message has been read.
     Seen,
+    /// The message has been answered.
     Answered,
+    /// The message is marked for follow-up.
     Flagged,
+    /// The message is marked for deletion.
     Deleted,
+    /// The message is saved as a draft.
     Draft,
+    /// A server-defined flag not covered by the standard variants.
     Custom(String),
 }
 
 impl Flag {
+    /// Parses an IMAP flag name into a [`Flag`].
     pub fn from_imap_str(s: &str) -> Self {
         match s {
             "\\Seen" => Flag::Seen,
@@ -23,6 +33,7 @@ impl Flag {
         }
     }
 
+    /// Returns the IMAP wire representation for this flag.
     pub fn to_imap_str(&self) -> &str {
         match self {
             Flag::Seen => "\\Seen",
