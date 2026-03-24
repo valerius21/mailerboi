@@ -551,7 +551,7 @@ Task 1 → Task 2/3 → Task 6/7 → Task 13 → Task 19 → Task 21 → Task 23
 
 ---
 
-- [ ] 5. Error Types with thiserror
+- [x] 5. Error Types with thiserror
 
   **What to do**:
   - Create `crates/mailerboi-core/src/error.rs`

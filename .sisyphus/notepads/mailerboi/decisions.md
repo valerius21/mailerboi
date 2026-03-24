@@ -23,3 +23,7 @@
 ## [2026-03-24] Domain model
 - Keep mail domain types in `mailerboi-core::domain` as pure serde-friendly data structures with `Display` impls; no IMAP parsing or backend behavior lives in these types.
 - Represent mailbox flags with a small typed enum plus `Custom(String)` to preserve unknown server labels without losing roundtrip fidelity.
+
+## [2026-03-24] Task 6 config module
+- Keep `AppConfig` public shape as `accounts: HashMap<String, AccountConfig>` and implement a custom `Deserialize` bridge so TOON dotted keys (`accounts.<name>`) are accepted without changing caller-facing types.
+- Keep credentials as plaintext `credentials.toml` with `#[serde(flatten)]` map to support account-name keyed passwords without fixed schema.

@@ -43,3 +43,8 @@
 - Added pure domain structs/enums under `crates/mailerboi-core/src/domain/` for `Folder`, `Address`, `Envelope`, `Flag`, `Attachment`, and `Message`.
 - `Attachment.data` and `Message.raw` use `#[serde(skip)]` so JSON roundtrip tests avoid serializing binary payloads by default.
 - `Flag` string helpers use IMAP system flag spellings (`\\Seen`, `\\Answered`, `\\Flagged`, `\\Deleted`, `\\Draft`) and preserve unknown labels via `Custom(String)`.
+
+## [2026-03-24] Task 6: config parsing behavior
+- TOON input using dotted keys (`accounts.personal:`) does not deserialize into `AppConfig { accounts: ... }` directly; custom deserialization is needed to map `accounts.<name>` keys into the `accounts` map.
+- `load_credentials` now emits a Unix warning when credentials mode is world-readable (`mode & 0o004 != 0`) without failing the load.
+- Account resolution order is stable: explicit name > first `default = true` account > first configured account.
