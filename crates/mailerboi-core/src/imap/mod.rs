@@ -786,10 +786,10 @@ pub async fn connect(config: &AccountConfig, password: &str) -> Result<ImapSessi
             .map_err(|e| ImapError::Tls(e.to_string()))?;
         let client = async_imap::Client::new(tls_stream);
         let session = client
-            .login(&config.email, password)
+            .login(config.login_username(), password)
             .await
             .map_err(|(_e, _)| ImapError::AuthFailed {
-                user: config.email.clone(),
+                user: config.login_username().to_string(),
             })?;
         Ok(ImapSession::Tls(session))
     } else {
@@ -805,10 +805,10 @@ pub async fn connect(config: &AccountConfig, password: &str) -> Result<ImapSessi
             })?;
         let client = async_imap::Client::new(tcp);
         let session = client
-            .login(&config.email, password)
+            .login(config.login_username(), password)
             .await
             .map_err(|(_e, _)| ImapError::AuthFailed {
-                user: config.email.clone(),
+                user: config.login_username().to_string(),
             })?;
         Ok(ImapSession::Plain(session))
     }
@@ -878,7 +878,7 @@ pub async fn doctor(config: &AccountConfig, password: &str) -> DoctorReport {
             }
         };
         let client = async_imap::Client::new(tls_stream);
-        let mut session = match client.login(&config.email, password).await {
+        let mut session = match client.login(config.login_username(), password).await {
             Ok(s) => {
                 report.auth_ok = true;
                 debug!("Auth OK");
@@ -905,7 +905,7 @@ pub async fn doctor(config: &AccountConfig, password: &str) -> DoctorReport {
         }
         report.tls_ok = true;
         let client = async_imap::Client::new(tcp);
-        let mut session = match client.login(&config.email, password).await {
+        let mut session = match client.login(config.login_username(), password).await {
             Ok(s) => {
                 report.auth_ok = true;
                 debug!("Auth OK");
@@ -939,6 +939,7 @@ mod tests {
     fn greenmail_tls_config() -> AccountConfig {
         AccountConfig {
             email: "test@localhost".to_string(),
+            username: None,
             display_name: None,
             host: "127.0.0.1".to_string(),
             port: 3993,
@@ -953,6 +954,7 @@ mod tests {
     fn greenmail_plain_config() -> AccountConfig {
         AccountConfig {
             email: "test2@localhost".to_string(),
+            username: None,
             display_name: None,
             host: "127.0.0.1".to_string(),
             port: 3143,

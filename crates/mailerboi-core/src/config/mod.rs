@@ -24,6 +24,11 @@ pub struct AccountConfig {
     /// Login email address used for IMAP authentication.
     pub email: String,
     #[serde(default)]
+    /// Optional IMAP login username. When set, used instead of `email` for
+    /// authentication. Required for servers that expect a domain-prefixed
+    /// username such as `gwdg\userid` rather than an email address.
+    pub username: Option<String>,
+    #[serde(default)]
     /// Optional display name used when composing messages.
     pub display_name: Option<String>,
     /// IMAP server hostname.
@@ -46,6 +51,14 @@ pub struct AccountConfig {
     #[serde(default)]
     /// Marks this account as the preferred default.
     pub default: bool,
+}
+
+impl AccountConfig {
+    /// Returns the username to use for IMAP `LOGIN`. Falls back to `email`
+    /// when no explicit `username` is configured.
+    pub fn login_username(&self) -> &str {
+        self.username.as_deref().unwrap_or(&self.email)
+    }
 }
 
 fn default_port() -> u16 {

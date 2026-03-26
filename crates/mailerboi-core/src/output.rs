@@ -389,6 +389,7 @@ mod tests {
     fn sample_account() -> AccountConfig {
         AccountConfig {
             email: "alice@example.com".to_string(),
+            username: None,
             display_name: Some("Alice".to_string()),
             host: "imap.example.com".to_string(),
             port: 993,
