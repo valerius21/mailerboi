@@ -1,0 +1,5 @@
+[default]
+exclude-files = [
+    "crates/mailerboi/src/cmd/*",
+    "crates/mailerboi/src/main.rs",
+]

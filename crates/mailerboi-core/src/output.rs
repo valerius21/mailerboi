@@ -510,4 +510,145 @@ mod tests {
         assert_eq!(parsed["account"], "personal");
         assert_eq!(parsed["auth_ok"], false);
     }
+
+    #[test]
+    fn output_format_display() {
+        assert_eq!(format!("{}", OutputFormat::Table), "table");
+        assert_eq!(format!("{}", OutputFormat::Json), "json");
+        assert_eq!(format!("{}", OutputFormat::Toon), "toon");
+    }
+
+    #[test]
+    fn format_folders_empty() {
+        let out = format_folders(&[], &OutputFormat::Table);
+        assert!(out.contains("No folders"));
+    }
+
+    #[test]
+    fn format_envelopes_toon() {
+        let out = format_envelopes(&sample_envelopes(), &OutputFormat::Toon);
+        assert!(!out.is_empty());
+    }
+
+    #[test]
+    fn format_message_table() {
+        let out = format_message(&sample_message(), &OutputFormat::Table);
+        assert!(out.contains("Alice") || out.contains("alice@example.com"));
+        assert!(out.contains("Hello World") || out.contains("Hello body"));
+    }
+
+    #[test]
+    fn format_message_table_no_body() {
+        let msg = Message {
+            envelope: sample_envelopes()[0].clone(),
+            text_body: None,
+            html_body: None,
+            attachments: vec![],
+            raw: vec![],
+        };
+        let out = format_message(&msg, &OutputFormat::Table);
+        assert!(out.contains("(no body)"));
+    }
+
+    #[test]
+    fn format_check_empty() {
+        let out = format_check(&[], &OutputFormat::Table);
+        assert!(out.contains("No accounts checked"));
+    }
+
+    #[test]
+    fn format_check_json() {
+        let checks = vec![MailboxStatus {
+            account: "personal".to_string(),
+            mailbox: "INBOX".to_string(),
+            total: 10,
+            unseen: 2,
+            recent: 0,
+        }];
+        let out = format_check(&checks, &OutputFormat::Json);
+        let parsed: serde_json::Value = serde_json::from_str(&out).unwrap();
+        assert_eq!(parsed[0]["account"], "personal");
+    }
+
+    #[test]
+    fn format_check_toon() {
+        let checks = vec![MailboxStatus {
+            account: "personal".to_string(),
+            mailbox: "INBOX".to_string(),
+            total: 5,
+            unseen: 1,
+            recent: 0,
+        }];
+        let out = format_check(&checks, &OutputFormat::Toon);
+        assert!(!out.is_empty());
+    }
+
+    #[test]
+    fn format_accounts_empty() {
+        let out = format_accounts(&[], &OutputFormat::Table);
+        assert!(out.contains("No accounts configured"));
+    }
+
+    #[test]
+    fn format_accounts_table() {
+        let account = sample_account();
+        let out = format_accounts(&[("personal", &account)], &OutputFormat::Table);
+        assert!(out.contains("personal"));
+        assert!(out.contains("alice@example.com"));
+    }
+
+    #[test]
+    fn format_accounts_toon() {
+        let account = sample_account();
+        let out = format_accounts(&[("personal", &account)], &OutputFormat::Toon);
+        assert!(!out.is_empty());
+    }
+
+    #[test]
+    fn format_doctor_table() {
+        let out = format_doctor(&sample_doctor(), &OutputFormat::Table);
+        assert!(out.contains("personal"));
+        assert!(out.contains("ok") || out.contains("fail"));
+        assert!(out.contains("auth failed"));
+    }
+
+    #[test]
+    fn format_doctor_toon() {
+        let out = format_doctor(&sample_doctor(), &OutputFormat::Toon);
+        assert!(!out.is_empty());
+    }
+
+    #[test]
+    fn format_doctor_table_no_error() {
+        let report = DoctorReport {
+            account: "test".to_string(),
+            dns_ok: true,
+            tcp_ok: true,
+            tls_ok: true,
+            auth_ok: true,
+            inbox_ok: true,
+            error: None,
+        };
+        let out = format_doctor(&report, &OutputFormat::Table);
+        assert!(out.contains("test"));
+    }
+
+    #[test]
+    fn truncate_long_string() {
+        // Tests the truncation branch (>50 chars)
+        let long = "a".repeat(60);
+        let result = format_envelopes(
+            &[Envelope {
+                uid: 1,
+                subject: Some(long),
+                from: vec![],
+                to: vec![],
+                date: None,
+                flags: vec![],
+                has_attachments: false,
+            }],
+            &OutputFormat::Table,
+        );
+        assert!(result.contains("..."));
+    }
 }

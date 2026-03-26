@@ -86,4 +86,25 @@ mod tests {
         assert_eq!(format!("{}", Flag::Seen), "Seen");
         assert_eq!(format!("{}", Flag::Custom("foo".to_string())), "foo");
     }
+
+    #[test]
+    fn flag_to_imap_str_all_variants() {
+        assert_eq!(Flag::Answered.to_imap_str(), "\\Answered");
+        assert_eq!(Flag::Flagged.to_imap_str(), "\\Flagged");
+        assert_eq!(Flag::Deleted.to_imap_str(), "\\Deleted");
+    }
+
+    #[test]
+    fn flag_display_all_variants() {
+        assert_eq!(format!("{}", Flag::Answered), "Answered");
+        assert_eq!(format!("{}", Flag::Flagged), "Flagged");
+        assert_eq!(format!("{}", Flag::Deleted), "Deleted");
+        assert_eq!(format!("{}", Flag::Draft), "Draft");
+    }
+
+    #[test]
+    fn flag_from_imap_str_answered_deleted() {
+        assert_eq!(Flag::from_imap_str("\\Answered"), Flag::Answered);
+        assert_eq!(Flag::from_imap_str("\\Deleted"), Flag::Deleted);
+    }
 }

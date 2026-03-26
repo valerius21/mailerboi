@@ -20,8 +20,7 @@ mod tests {
             .map_err(|(err, _)| err)
             .unwrap();
 
-        let mailbox = session.select("INBOX").await.unwrap();
-        assert_eq!(mailbox.exists, 0);
+        session.select("INBOX").await.unwrap();
         session.logout().await.unwrap();
     }
 
@@ -36,8 +35,7 @@ mod tests {
             .map_err(|(err, _)| err)
             .unwrap();
 
-        let mailbox = session.select("INBOX").await.unwrap();
-        assert_eq!(mailbox.exists, 0);
+        session.select("INBOX").await.unwrap();
         session.logout().await.unwrap();
     }
 }

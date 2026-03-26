@@ -202,10 +202,15 @@ pub fn resolve_account<'a>(
 #[cfg(test)]
 mod tests {
     use std::io::Write;
+    use std::sync::Mutex;
 
     use tempfile::NamedTempFile;
 
     use super::*;
+
+    // Serialize tests that mutate environment variables to prevent flakiness
+    // when tests run concurrently.
+    static ENV_MUTEX: Mutex<()> = Mutex::new(());
 
     fn sample_config_toml() -> &'static str {
         r#"[accounts.personal]
@@ -316,5 +321,86 @@ host = "imap.example.com"
         assert_eq!(acc.port, 993);
         assert!(acc.tls);
         assert_eq!(acc.default_mailbox, "INBOX");
+    }
+
+    #[test]
+    fn config_path_uses_env_var() {
+        let _guard = ENV_MUTEX.lock().unwrap();
+        std::env::set_var("MAILERBOI_CONFIG", "/tmp/test_config.toml");
+        let path = config_path();
+        std::env::remove_var("MAILERBOI_CONFIG");
+        assert_eq!(path, std::path::PathBuf::from("/tmp/test_config.toml"));
+    }
+
+    #[test]
+    fn config_path_fallback_is_reasonable() {
+        let _guard = ENV_MUTEX.lock().unwrap();
+        std::env::remove_var("MAILERBOI_CONFIG");
+        let path = config_path();
+        assert!(path.to_string_lossy().contains("mailerboi"));
+        assert!(path.to_string_lossy().ends_with("config.toml"));
+    }
+
+    #[test]
+    fn credentials_path_uses_env_var() {
+        let _guard = ENV_MUTEX.lock().unwrap();
+        std::env::set_var("MAILERBOI_CREDENTIALS", "/tmp/test_creds.toml");
+        let path = credentials_path();
+        std::env::remove_var("MAILERBOI_CREDENTIALS");
+        assert_eq!(path, std::path::PathBuf::from("/tmp/test_creds.toml"));
+    }
+
+    #[test]
+    fn credentials_path_fallback_is_reasonable() {
+        let _guard = ENV_MUTEX.lock().unwrap();
+        std::env::remove_var("MAILERBOI_CREDENTIALS");
+        let path = credentials_path();
+        assert!(path.to_string_lossy().contains("mailerboi"));
+        assert!(path.to_string_lossy().ends_with("credentials.toml"));
+    }
+
+    #[test]
+    fn load_config_default_missing_returns_error() {
+        let _guard = ENV_MUTEX.lock().unwrap();
+        std::env::set_var("MAILERBOI_CONFIG", "/nonexistent/mailerboi/config.toml");
+        let result = load_config_default();
+        std::env::remove_var("MAILERBOI_CONFIG");
+        assert!(result.is_err());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn load_credentials_world_readable_succeeds() {
+        use std::io::Write;
+        use std::os::unix::fs::PermissionsExt;
+        let mut f = NamedTempFile::new().unwrap();
+        write!(f, "personal = \"secret\"\n").unwrap();
+        // Make it world-readable to trigger the warning
+        std::fs::set_permissions(f.path(), std::fs::Permissions::from_mode(0o644)).unwrap();
+        let creds = load_credentials(f.path()).unwrap();
+        assert_eq!(creds.passwords.get("personal").unwrap(), "secret");
+    }
+
+    #[test]
+    fn resolve_account_no_default_returns_first() {
+        // No account has default = true; should return first account found
+        let toml = r#"[accounts.alpha]
+email = "alpha@example.com"
+host = "imap.example.com"
+"#;
+        let config: AppConfig = toml::from_str(toml).unwrap();
+        let (name, acc) = resolve_account(&config, None).unwrap();
+        assert_eq!(name, "alpha");
+        assert_eq!(acc.email, "alpha@example.com");
+    }
+
+    #[test]
+    fn resolve_account_empty_config_returns_error() {
+        let config = AppConfig {
+            accounts: std::collections::HashMap::new(),
+        };
+        let result = resolve_account(&config, None);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("default"));
     }
 }

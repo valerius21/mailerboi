@@ -934,6 +934,7 @@ pub async fn doctor(config: &AccountConfig, password: &str) -> DoctorReport {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use tempfile::tempdir;
 
     fn greenmail_tls_config() -> AccountConfig {
         AccountConfig {
@@ -1045,5 +1046,597 @@ mod tests {
             error: Some("TCP failed".to_string()),
         };
         assert!(!report.all_ok());
+    }
+
+    /// Creates a TLS session for an isolated per-test user so tests don't
+    /// interfere with each other. GreenMail creates the user on first login.
+    async fn session_for(user: &str) -> ImapSession {
+        let config = AccountConfig {
+            email: format!("{}@localhost", user),
+            ..greenmail_tls_config()
+        };
+        connect(&config, user).await.unwrap()
+    }
+
+    // ── list_folders ─────────────────────────────────────────────────────────
+
+    #[tokio::test]
+    #[ignore]
+    async fn list_folders_contains_inbox() {
+        let mut session = session_for("folders_user").await;
+        let folders = session.list_folders().await.unwrap();
+        let names: Vec<&str> = folders.iter().map(|f| f.name.as_str()).collect();
+        assert!(names.contains(&"INBOX"), "INBOX missing from {:?}", names);
+        session.logout().await.unwrap();
+    }
+
+    // ── list_envelopes ────────────────────────────────────────────────────────
+
+    #[tokio::test]
+    #[ignore]
+    async fn list_envelopes_empty_mailbox() {
+        let mut session = session_for("envelopes_empty").await;
+        let envelopes = session.list_envelopes("INBOX", 10, 1).await.unwrap();
+        assert!(envelopes.is_empty());
+        session.logout().await.unwrap();
+    }
+
+    #[tokio::test]
+    #[ignore]
+    async fn list_envelopes_with_message() {
+        let mut session = session_for("envelopes_msg").await;
+        session
+            .create_draft("envelopes_msg@localhost", "Envelope Test", "body", "INBOX")
+            .await
+            .unwrap();
+        let envelopes = session.list_envelopes("INBOX", 10, 1).await.unwrap();
+        assert!(!envelopes.is_empty());
+        let subjects: Vec<&str> = envelopes
+            .iter()
+            .filter_map(|e| e.subject.as_deref())
+            .collect();
+        assert!(
+            subjects.iter().any(|s| s.contains("Envelope Test")),
+            "subject not found in {:?}",
+            subjects
+        );
+        session.logout().await.unwrap();
+    }
+
+    #[tokio::test]
+    #[ignore]
+    async fn list_envelopes_pagination() {
+        let mut session = session_for("envelopes_page").await;
+        for i in 0..5 {
+            session
+                .create_draft(
+                    "envelopes_page@localhost",
+                    &format!("Msg {}", i),
+                    "body",
+                    "INBOX",
+                )
+                .await
+                .unwrap();
+        }
+        let page1 = session.list_envelopes("INBOX", 2, 1).await.unwrap();
+        assert_eq!(page1.len(), 2);
+        let page2 = session.list_envelopes("INBOX", 2, 2).await.unwrap();
+        assert_eq!(page2.len(), 2);
+        // UIDs should be different across pages
+        let p1_uids: Vec<u32> = page1.iter().map(|e| e.uid).collect();
+        let p2_uids: Vec<u32> = page2.iter().map(|e| e.uid).collect();
+        assert!(
+            p1_uids.iter().all(|u| !p2_uids.contains(u)),
+            "pages overlap: {:?} / {:?}",
+            p1_uids,
+            p2_uids
+        );
+        session.logout().await.unwrap();
+    }
+
+    // ── fetch_message ─────────────────────────────────────────────────────────
+
+    #[tokio::test]
+    #[ignore]
+    async fn fetch_message_returns_body() {
+        let mut session = session_for("fetch_msg").await;
+        session
+            .create_draft("fetch_msg@localhost", "Fetch Me", "Hello world", "INBOX")
+            .await
+            .unwrap();
+        let envelopes = session.list_envelopes("INBOX", 10, 1).await.unwrap();
+        let uid = envelopes[0].uid;
+        let msg = session.fetch_message(uid, "INBOX").await.unwrap();
+        assert_eq!(msg.envelope.uid, uid);
+        assert!(
+            msg.text_body
+                .as_deref()
+                .unwrap_or("")
+                .contains("Hello world"),
+            "body not found: {:?}",
+            msg.text_body
+        );
+        session.logout().await.unwrap();
+    }
+
+    #[tokio::test]
+    #[ignore]
+    async fn fetch_message_not_found_returns_error() {
+        let mut session = session_for("fetch_missing").await;
+        let result = session.fetch_message(999_999, "INBOX").await;
+        assert!(result.is_err());
+        session.logout().await.unwrap();
+    }
+
+    // ── search_messages ───────────────────────────────────────────────────────
+
+    #[tokio::test]
+    #[ignore]
+    async fn search_messages_all_returns_results() {
+        let mut session = session_for("search_all").await;
+        session
+            .create_draft("search_all@localhost", "Searchable", "body", "INBOX")
+            .await
+            .unwrap();
+        let results = session
+            .search_messages("INBOX", &SearchQuery::default())
+            .await
+            .unwrap();
+        assert!(!results.is_empty());
+        session.logout().await.unwrap();
+    }
+
+    #[tokio::test]
+    #[ignore]
+    async fn search_messages_unseen() {
+        let mut session = session_for("search_unseen").await;
+        session
+            .create_draft("search_unseen@localhost", "Unseen Msg", "body", "INBOX")
+            .await
+            .unwrap();
+        let results = session
+            .search_messages(
+                "INBOX",
+                &SearchQuery {
+                    unseen: true,
+                    ..Default::default()
+                },
+            )
+            .await
+            .unwrap();
+        // Appended messages start as \Recent but not \Seen
+        assert!(!results.is_empty());
+        session.logout().await.unwrap();
+    }
+
+    #[tokio::test]
+    #[ignore]
+    async fn search_messages_empty_mailbox() {
+        let mut session = session_for("search_empty").await;
+        let results = session
+            .search_messages("INBOX", &SearchQuery::default())
+            .await
+            .unwrap();
+        assert!(results.is_empty());
+        session.logout().await.unwrap();
+    }
+
+    #[tokio::test]
+    #[ignore]
+    async fn search_messages_with_limit() {
+        let mut session = session_for("search_limit").await;
+        for i in 0..5 {
+            session
+                .create_draft(
+                    "search_limit@localhost",
+                    &format!("Msg {}", i),
+                    "body",
+                    "INBOX",
+                )
+                .await
+                .unwrap();
+        }
+        let results = session
+            .search_messages(
+                "INBOX",
+                &SearchQuery {
+                    limit: 2,
+                    ..Default::default()
+                },
+            )
+            .await
+            .unwrap();
+        assert_eq!(results.len(), 2);
+        session.logout().await.unwrap();
+    }
+
+    // ── check_mailbox_status ──────────────────────────────────────────────────
+
+    #[tokio::test]
+    #[ignore]
+    async fn check_mailbox_status_empty() {
+        let mut session = session_for("status_empty").await;
+        let status = session.check_mailbox_status("INBOX").await.unwrap();
+        assert_eq!(status.total, 0);
+        session.logout().await.unwrap();
+    }
+
+    #[tokio::test]
+    #[ignore]
+    async fn check_mailbox_status_with_message() {
+        let mut session = session_for("status_msg").await;
+        session
+            .create_draft("status_msg@localhost", "Status Test", "body", "INBOX")
+            .await
+            .unwrap();
+        let status = session.check_mailbox_status("INBOX").await.unwrap();
+        assert!(status.total >= 1);
+        session.logout().await.unwrap();
+    }
+
+    // ── set_flags ─────────────────────────────────────────────────────────────
+
+    #[tokio::test]
+    #[ignore]
+    async fn set_flags_marks_message_seen() {
+        let mut session = session_for("flags_seen").await;
+        session
+            .create_draft("flags_seen@localhost", "Flag Me", "body", "INBOX")
+            .await
+            .unwrap();
+        let envelopes = session.list_envelopes("INBOX", 10, 1).await.unwrap();
+        let uid = envelopes[0].uid;
+        session
+            .set_flags(&[uid], "INBOX", &["\\Seen".to_string()], true)
+            .await
+            .unwrap();
+        // Verify via search: the message should no longer appear in UNSEEN
+        let unseen = session
+            .search_messages(
+                "INBOX",
+                &SearchQuery {
+                    unseen: true,
+                    ..Default::default()
+                },
+            )
+            .await
+            .unwrap();
+        assert!(
+            unseen.iter().all(|e| e.uid != uid),
+            "uid {} still unseen after marking seen",
+            uid
+        );
+        session.logout().await.unwrap();
+    }
+
+    #[tokio::test]
+    #[ignore]
+    async fn set_flags_removes_flag() {
+        let mut session = session_for("flags_remove").await;
+        session
+            .create_draft("flags_remove@localhost", "Flag Remove", "body", "INBOX")
+            .await
+            .unwrap();
+        let envelopes = session.list_envelopes("INBOX", 10, 1).await.unwrap();
+        let uid = envelopes[0].uid;
+        // Add then remove \Flagged
+        session
+            .set_flags(&[uid], "INBOX", &["\\Flagged".to_string()], true)
+            .await
+            .unwrap();
+        session
+            .set_flags(&[uid], "INBOX", &["\\Flagged".to_string()], false)
+            .await
+            .unwrap();
+        session.logout().await.unwrap();
+    }
+
+    // ── move_message ──────────────────────────────────────────────────────────
+
+    #[tokio::test]
+    #[ignore]
+    async fn move_message_to_trash() {
+        let mut session = session_for("move_msg").await;
+        session
+            .create_draft("move_msg@localhost", "Move Me", "body", "INBOX")
+            .await
+            .unwrap();
+        let envelopes = session.list_envelopes("INBOX", 10, 1).await.unwrap();
+        let uid = envelopes[0].uid;
+        // Create Trash first so the move target exists
+        let _ = match &mut session {
+            ImapSession::Tls(s) => s.create("Trash").await,
+            ImapSession::Plain(s) => s.create("Trash").await,
+        };
+        session.move_message(uid, "INBOX", "Trash").await.unwrap();
+        // Message should be gone from INBOX
+        let inbox = session.list_envelopes("INBOX", 10, 1).await.unwrap();
+        assert!(
+            inbox.iter().all(|e| e.uid != uid),
+            "uid {} still in INBOX after move",
+            uid
+        );
+        session.logout().await.unwrap();
+    }
+
+    // ── delete_message ────────────────────────────────────────────────────────
+
+    #[tokio::test]
+    #[ignore]
+    async fn delete_message_force_expunges() {
+        let mut session = session_for("delete_force").await;
+        session
+            .create_draft("delete_force@localhost", "Delete Me", "body", "INBOX")
+            .await
+            .unwrap();
+        let envelopes = session.list_envelopes("INBOX", 10, 1).await.unwrap();
+        let uid = envelopes[0].uid;
+        session.delete_message(uid, "INBOX", true).await.unwrap();
+        let remaining = session.list_envelopes("INBOX", 10, 1).await.unwrap();
+        assert!(
+            remaining.iter().all(|e| e.uid != uid),
+            "uid {} still present after force delete",
+            uid
+        );
+        session.logout().await.unwrap();
+    }
+
+    #[tokio::test]
+    #[ignore]
+    async fn delete_message_soft_moves_to_trash() {
+        let mut session = session_for("delete_soft").await;
+        // GreenMail does not auto-create Trash; create it before soft-delete
+        let _ = match &mut session {
+            ImapSession::Tls(s) => s.create("Trash").await,
+            ImapSession::Plain(s) => s.create("Trash").await,
+        };
+        session
+            .create_draft("delete_soft@localhost", "Soft Delete", "body", "INBOX")
+            .await
+            .unwrap();
+        let envelopes = session.list_envelopes("INBOX", 10, 1).await.unwrap();
+        let uid = envelopes[0].uid;
+        session.delete_message(uid, "INBOX", false).await.unwrap();
+        let inbox = session.list_envelopes("INBOX", 10, 1).await.unwrap();
+        assert!(
+            inbox.iter().all(|e| e.uid != uid),
+            "uid {} still in INBOX after soft delete",
+            uid
+        );
+        session.logout().await.unwrap();
+    }
+
+    // ── download_attachments ──────────────────────────────────────────────────
+
+    #[tokio::test]
+    #[ignore]
+    async fn download_attachments_plain_message_returns_empty() {
+        let mut session = session_for("download_plain").await;
+        session
+            .create_draft(
+                "download_plain@localhost",
+                "No Attachments",
+                "Just text",
+                "INBOX",
+            )
+            .await
+            .unwrap();
+        let envelopes = session.list_envelopes("INBOX", 10, 1).await.unwrap();
+        let uid = envelopes[0].uid;
+        let dir = tempdir().unwrap();
+        let saved = session
+            .download_attachments(uid, "INBOX", dir.path(), None)
+            .await
+            .unwrap();
+        assert!(saved.is_empty());
+        session.logout().await.unwrap();
+    }
+
+    // ── create_draft ──────────────────────────────────────────────────────────
+
+    #[tokio::test]
+    #[ignore]
+    async fn create_draft_appends_to_drafts_folder() {
+        let mut session = session_for("draft_create").await;
+        session
+            .create_draft(
+                "draft_create@localhost",
+                "My Draft",
+                "draft body",
+                "Drafts",
+            )
+            .await
+            .unwrap();
+        let envelopes = session.list_envelopes("Drafts", 10, 1).await.unwrap();
+        assert!(!envelopes.is_empty());
+        let subjects: Vec<&str> = envelopes
+            .iter()
+            .filter_map(|e| e.subject.as_deref())
+            .collect();
+        assert!(
+            subjects.iter().any(|s| s.contains("My Draft")),
+            "draft subject not found in {:?}",
+            subjects
+        );
+        session.logout().await.unwrap();
+    }
+
+    // ── disconnect ────────────────────────────────────────────────────────────
+
+    #[tokio::test]
+    #[ignore]
+    async fn disconnect_helper_closes_session() {
+        let config = greenmail_tls_config();
+        let session = connect(&config, "test").await.unwrap();
+        disconnect(session).await.unwrap();
+    }
+
+    // ── plain TCP variants ────────────────────────────────────────────────────
+
+    async fn plain_session_for(user: &str) -> ImapSession {
+        let config = AccountConfig {
+            email: format!("{}@localhost", user),
+            ..greenmail_plain_config()
+        };
+        connect(&config, user).await.unwrap()
+    }
+
+    #[tokio::test]
+    #[ignore]
+    async fn plain_list_folders_contains_inbox() {
+        let mut session = plain_session_for("plain_folders").await;
+        let folders = session.list_folders().await.unwrap();
+        let names: Vec<&str> = folders.iter().map(|f| f.name.as_str()).collect();
+        assert!(names.contains(&"INBOX"), "INBOX missing: {:?}", names);
+        session.logout().await.unwrap();
+    }
+
+    #[tokio::test]
+    #[ignore]
+    async fn plain_list_envelopes_with_message() {
+        let mut session = plain_session_for("plain_envelopes").await;
+        session
+            .create_draft("plain_envelopes@localhost", "Plain Test", "body", "INBOX")
+            .await
+            .unwrap();
+        let envelopes = session.list_envelopes("INBOX", 10, 1).await.unwrap();
+        assert!(!envelopes.is_empty());
+        session.logout().await.unwrap();
+    }
+
+    #[tokio::test]
+    #[ignore]
+    async fn plain_fetch_message() {
+        let mut session = plain_session_for("plain_fetch").await;
+        session
+            .create_draft("plain_fetch@localhost", "Plain Fetch", "hello plain", "INBOX")
+            .await
+            .unwrap();
+        let envelopes = session.list_envelopes("INBOX", 10, 1).await.unwrap();
+        let uid = envelopes[0].uid;
+        let msg = session.fetch_message(uid, "INBOX").await.unwrap();
+        assert_eq!(msg.envelope.uid, uid);
+        session.logout().await.unwrap();
+    }
+
+    #[tokio::test]
+    #[ignore]
+    async fn plain_search_messages() {
+        let mut session = plain_session_for("plain_search").await;
+        session
+            .create_draft("plain_search@localhost", "Plain Search", "body", "INBOX")
+            .await
+            .unwrap();
+        let results = session
+            .search_messages("INBOX", &SearchQuery::default())
+            .await
+            .unwrap();
+        assert!(!results.is_empty());
+        session.logout().await.unwrap();
+    }
+
+    #[tokio::test]
+    #[ignore]
+    async fn plain_check_mailbox_status() {
+        let mut session = plain_session_for("plain_status").await;
+        let status = session.check_mailbox_status("INBOX").await.unwrap();
+        let _ = status.total;
+        session.logout().await.unwrap();
+    }
+
+    #[tokio::test]
+    #[ignore]
+    async fn plain_set_flags() {
+        let mut session = plain_session_for("plain_flags").await;
+        session
+            .create_draft("plain_flags@localhost", "Plain Flags", "body", "INBOX")
+            .await
+            .unwrap();
+        let envelopes = session.list_envelopes("INBOX", 10, 1).await.unwrap();
+        let uid = envelopes[0].uid;
+        session
+            .set_flags(&[uid], "INBOX", &["\\Seen".to_string()], true)
+            .await
+            .unwrap();
+        session.logout().await.unwrap();
+    }
+
+    #[tokio::test]
+    #[ignore]
+    async fn plain_move_message() {
+        let mut session = plain_session_for("plain_move").await;
+        let _ = match &mut session {
+            ImapSession::Tls(s) => s.create("Trash").await,
+            ImapSession::Plain(s) => s.create("Trash").await,
+        };
+        session
+            .create_draft("plain_move@localhost", "Plain Move", "body", "INBOX")
+            .await
+            .unwrap();
+        let envelopes = session.list_envelopes("INBOX", 10, 1).await.unwrap();
+        let uid = envelopes[0].uid;
+        session.move_message(uid, "INBOX", "Trash").await.unwrap();
+        session.logout().await.unwrap();
+    }
+
+    #[tokio::test]
+    #[ignore]
+    async fn plain_delete_message_force() {
+        let mut session = plain_session_for("plain_delete").await;
+        session
+            .create_draft("plain_delete@localhost", "Plain Delete", "body", "INBOX")
+            .await
+            .unwrap();
+        let envelopes = session.list_envelopes("INBOX", 10, 1).await.unwrap();
+        let uid = envelopes[0].uid;
+        session.delete_message(uid, "INBOX", true).await.unwrap();
+        session.logout().await.unwrap();
+    }
+
+    #[tokio::test]
+    #[ignore]
+    async fn plain_create_draft() {
+        let mut session = plain_session_for("plain_draft").await;
+        session
+            .create_draft("plain_draft@localhost", "Plain Draft", "body", "Drafts")
+            .await
+            .unwrap();
+        let envelopes = session.list_envelopes("Drafts", 10, 1).await.unwrap();
+        assert!(!envelopes.is_empty());
+        session.logout().await.unwrap();
+    }
+
+    #[tokio::test]
+    #[ignore]
+    async fn plain_download_attachments_empty() {
+        let mut session = plain_session_for("plain_download").await;
+        session
+            .create_draft("plain_download@localhost", "Plain DL", "body", "INBOX")
+            .await
+            .unwrap();
+        let envelopes = session.list_envelopes("INBOX", 10, 1).await.unwrap();
+        let uid = envelopes[0].uid;
+        let dir = tempdir().unwrap();
+        let saved = session
+            .download_attachments(uid, "INBOX", dir.path(), None)
+            .await
+            .unwrap();
+        assert!(saved.is_empty());
+        session.logout().await.unwrap();
+    }
+
+    // ── doctor plain path ─────────────────────────────────────────────────────
+
+    #[tokio::test]
+    #[ignore]
+    async fn doctor_plain_all_ok() {
+        let config = greenmail_plain_config();
+        let report = doctor(&config, "test2").await;
+        assert!(report.dns_ok);
+        assert!(report.tcp_ok);
+        assert!(report.tls_ok, "plain IMAP sets tls_ok=true");
+        assert!(report.auth_ok, "auth failed: {:?}", report.error);
+        assert!(report.inbox_ok, "inbox failed: {:?}", report.error);
+        assert!(report.all_ok());
     }
 }
