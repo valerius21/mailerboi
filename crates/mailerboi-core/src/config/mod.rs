@@ -14,42 +14,29 @@ use crate::error::{ConfigError, Result};
 /// Parsed application configuration.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct AppConfig {
-    /// Accounts keyed by their configured account name.
     pub accounts: HashMap<String, AccountConfig>,
 }
 
 /// Connection settings for one configured IMAP account.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct AccountConfig {
-    /// Login email address used for IMAP authentication.
     pub email: String,
     #[serde(default)]
-    /// Optional IMAP login username. When set, used instead of `email` for
-    /// authentication. Required for servers that expect a domain-prefixed
-    /// username such as `gwdg\userid` rather than an email address.
     pub username: Option<String>,
     #[serde(default)]
-    /// Optional display name used when composing messages.
     pub display_name: Option<String>,
-    /// IMAP server hostname.
     pub host: String,
     #[serde(default = "default_port")]
-    /// IMAP server port.
     pub port: u16,
     #[serde(default = "default_tls")]
-    /// Enables implicit TLS, typically on port `993`.
     pub tls: bool,
     #[serde(default)]
-    /// Requests STARTTLS when supported by the server.
     pub starttls: bool,
     #[serde(default)]
-    /// Skips certificate and hostname validation for TLS connections.
     pub insecure: bool,
     #[serde(default = "default_mailbox")]
-    /// Mailbox used when a command does not specify one.
     pub default_mailbox: String,
     #[serde(default)]
-    /// Marks this account as the preferred default.
     pub default: bool,
 }
 
@@ -77,7 +64,6 @@ fn default_mailbox() -> String {
 #[derive(Debug, Clone, Deserialize)]
 pub struct Credentials {
     #[serde(flatten)]
-    /// Account passwords keyed by account name.
     pub passwords: HashMap<String, String>,
 }
 

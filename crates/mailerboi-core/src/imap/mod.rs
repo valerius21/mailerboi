@@ -15,8 +15,6 @@ use async_imap::imap_proto::types::NameAttribute;
 use crate::config::AccountConfig;
 use crate::error::{ImapError, Result};
 
-/// Common folder names that providers use for Trash when SPECIAL-USE attributes
-/// are not advertised.
 const TRASH_FALLBACK_NAMES: &[&str] = &["Trash", "[Gmail]/Trash", "Deleted Messages", "Deleted Items"];
 
 /// Converts an `imap_proto` [`NameAttribute`] to its standard IMAP backslash-prefixed string.
@@ -41,49 +39,32 @@ fn format_name_attribute(attr: &NameAttribute<'_>) -> String {
 type TlsSession = async_imap::Session<async_native_tls::TlsStream<TcpStream>>;
 type PlainSession = async_imap::Session<TcpStream>;
 
-/// An authenticated IMAP session over TLS or plain TCP.
 pub enum ImapSession {
-    /// A TLS-protected IMAP session.
     Tls(TlsSession),
-    /// A plain-text IMAP session.
     Plain(PlainSession),
 }
 
 /// Connectivity and mailbox health checks for one account.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct DoctorReport {
-    /// Account email address used for the check.
     pub account: String,
-    /// DNS resolution succeeded for the configured host.
     pub dns_ok: bool,
-    /// A TCP connection to the IMAP server succeeded.
     pub tcp_ok: bool,
-    /// TLS negotiation succeeded, or plain IMAP was intentionally used.
     pub tls_ok: bool,
-    /// Authentication with the supplied credentials succeeded.
     pub auth_ok: bool,
-    /// Selecting `INBOX` succeeded after login.
     pub inbox_ok: bool,
-    /// First failure encountered during the diagnostic run.
     pub error: Option<String>,
 }
 
 /// Search filters for [`ImapSession::search_messages`].
 #[derive(Debug, Default)]
 pub struct SearchQuery {
-    /// Restrict results to unread messages.
     pub unseen: bool,
-    /// Restrict results to read messages.
     pub seen: bool,
-    /// Match sender addresses containing this string.
     pub from: Option<String>,
-    /// Match subjects containing this string.
     pub subject: Option<String>,
-    /// Match messages on or after an IMAP date value.
     pub since: Option<String>,
-    /// Match messages before an IMAP date value.
     pub before: Option<String>,
-    /// Maximum number of results to return; `0` falls back to an internal default.
     pub limit: u32,
 }
 

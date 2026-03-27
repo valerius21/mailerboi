@@ -54,15 +54,10 @@ impl std::fmt::Display for OutputFormat {
 /// Message counts for one account and mailbox.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct MailboxStatus {
-    /// Account name or email label shown in command output.
     pub account: String,
-    /// Mailbox that was checked.
     pub mailbox: String,
-    /// Total number of messages.
     pub total: u32,
-    /// Number of unread messages.
     pub unseen: u32,
-    /// Number of recent messages reported by the server.
     pub recent: u32,
 }
 
