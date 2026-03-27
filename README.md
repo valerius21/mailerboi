@@ -4,12 +4,12 @@ Multi-account IMAP email client for the command line.
 
 ## Features
 
-- Manage multiple IMAP accounts from a single CLI
-- List, search, read, and organize emails
-- Download attachments
-- Create draft messages
-- Support for TLS and plain IMAP connections
-- Multiple output formats: table, JSON, and TOON (token-efficient)
+- 📧 Manage multiple IMAP accounts from a single CLI
+- 🔍 List, search, read, and organize emails
+- 📎 Download attachments
+- 📝 Create draft messages
+- 🔐 Support for TLS and plain IMAP connections
+- 📊 Multiple output formats: table, JSON, and TOON (token-efficient)
 
 ## Installation
 
