@@ -33,16 +33,15 @@ pub async fn run(
     let mut session = connect(&account, password)
         .await
         .context("IMAP connection failed")?;
-    session
+    let result = session
         .delete_message(uid, mailbox, force)
         .await
         .context("Failed to delete message")?;
     session.logout().await.ok();
 
-    if force {
-        println!("Permanently deleted message {}", uid);
-    } else {
-        println!("Moved message {} to Trash", uid);
+    match result {
+        Some(trash_folder) => println!("Moved message {} to {}", uid, trash_folder),
+        None => println!("Permanently deleted message {}", uid),
     }
     Ok(())
 }

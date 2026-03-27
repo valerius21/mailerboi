@@ -59,6 +59,9 @@ pub enum ImapError {
     /// The requested message UID was not found.
     #[error("Message UID {uid} not found")]
     MessageNotFound { uid: u32 },
+    /// No trash folder could be discovered via attributes or common names.
+    #[error("Could not find Trash folder; use --force for permanent deletion")]
+    TrashFolderNotFound,
     /// The IMAP library reported a protocol-level failure.
     #[error("IMAP protocol error: {0}")]
     Protocol(String),

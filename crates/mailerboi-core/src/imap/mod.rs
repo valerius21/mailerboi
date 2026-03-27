@@ -10,8 +10,33 @@ use serde::{Deserialize, Serialize};
 use tokio::net::TcpStream;
 use tracing::{debug, instrument, warn};
 
+use async_imap::imap_proto::types::NameAttribute;
+
 use crate::config::AccountConfig;
 use crate::error::{ImapError, Result};
+
+/// Common folder names that providers use for Trash when SPECIAL-USE attributes
+/// are not advertised.
+const TRASH_FALLBACK_NAMES: &[&str] = &["Trash", "[Gmail]/Trash", "Deleted Messages", "Deleted Items"];
+
+/// Converts an `imap_proto` [`NameAttribute`] to its standard IMAP backslash-prefixed string.
+fn format_name_attribute(attr: &NameAttribute<'_>) -> String {
+    match attr {
+        NameAttribute::NoInferiors => "\\Noinferiors".to_string(),
+        NameAttribute::NoSelect => "\\Noselect".to_string(),
+        NameAttribute::Marked => "\\Marked".to_string(),
+        NameAttribute::Unmarked => "\\Unmarked".to_string(),
+        NameAttribute::All => "\\All".to_string(),
+        NameAttribute::Archive => "\\Archive".to_string(),
+        NameAttribute::Drafts => "\\Drafts".to_string(),
+        NameAttribute::Flagged => "\\Flagged".to_string(),
+        NameAttribute::Junk => "\\Junk".to_string(),
+        NameAttribute::Sent => "\\Sent".to_string(),
+        NameAttribute::Trash => "\\Trash".to_string(),
+        NameAttribute::Extension(ext) => format!("\\{}", ext),
+        other => format!("{:?}", other),
+    }
+}
 
 type TlsSession = async_imap::Session<async_native_tls::TlsStream<TcpStream>>;
 type PlainSession = async_imap::Session<TcpStream>;
@@ -119,7 +144,7 @@ impl ImapSession {
             .map(|n| crate::domain::Folder {
                 name: n.name().to_string(),
                 delimiter: n.delimiter().map(|d| d.to_string()),
-                attributes: n.attributes().iter().map(|a| format!("{:?}", a)).collect(),
+                attributes: n.attributes().iter().map(format_name_attribute).collect(),
             })
             .collect())
     }
@@ -611,12 +636,66 @@ impl ImapSession {
         Ok(())
     }
 
+    /// Discovers the server's Trash folder by scanning IMAP special-use attributes.
+    ///
+    /// First checks for a folder with the `\Trash` attribute (RFC 6154).
+    /// Falls back to common folder names if no attribute match is found.
+    /// Returns `None` if no trash folder can be identified.
+    pub async fn find_trash_folder(&mut self) -> Result<Option<String>> {
+        use futures::StreamExt;
+
+        let entries: Vec<_> = match self {
+            ImapSession::Tls(s) => {
+                let names = s
+                    .list(Some(""), Some("*"))
+                    .await
+                    .map_err(|e| ImapError::Protocol(e.to_string()))?;
+                names.collect::<Vec<_>>().await
+            }
+            ImapSession::Plain(s) => {
+                let names = s
+                    .list(Some(""), Some("*"))
+                    .await
+                    .map_err(|e| ImapError::Protocol(e.to_string()))?;
+                names.collect::<Vec<_>>().await
+            }
+        };
+
+        let mut folder_names: Vec<String> = Vec::new();
+        for entry in entries.into_iter().filter_map(|n| n.ok()) {
+            let has_trash = entry
+                .attributes()
+                .iter()
+                .any(|a| matches!(a, NameAttribute::Trash));
+            if has_trash {
+                return Ok(Some(entry.name().to_string()));
+            }
+            folder_names.push(entry.name().to_string());
+        }
+
+        // Fallback: check common trash folder names
+        for &fallback in TRASH_FALLBACK_NAMES {
+            if folder_names.iter().any(|n| n == fallback) {
+                return Ok(Some(fallback.to_string()));
+            }
+        }
+
+        Ok(None)
+    }
+
     /// Deletes a message from a mailbox.
     ///
-    /// When `force` is `false`, the message is moved to `Trash`; otherwise it is
-    /// marked deleted and expunged. Returns [`ImapError::Protocol`] if the server
-    /// rejects the operation.
-    pub async fn delete_message(&mut self, uid: u32, mailbox: &str, force: bool) -> Result<()> {
+    /// When `force` is `false`, the message is moved to the server's Trash folder
+    /// (discovered via IMAP special-use attributes or common name fallback).
+    /// When `force` is `true`, the message is marked deleted and expunged.
+    ///
+    /// Returns the name of the trash folder used, or `None` for permanent deletion.
+    pub async fn delete_message(
+        &mut self,
+        uid: u32,
+        mailbox: &str,
+        force: bool,
+    ) -> Result<Option<String>> {
         use futures::StreamExt;
 
         if force {
@@ -648,10 +727,15 @@ impl ImapSession {
                     let _: Vec<_> = exp.collect().await;
                 }
             }
+            Ok(None)
         } else {
-            self.move_message(uid, mailbox, "Trash").await?;
+            let trash = self
+                .find_trash_folder()
+                .await?
+                .ok_or(ImapError::TrashFolderNotFound)?;
+            self.move_message(uid, mailbox, &trash).await?;
+            Ok(Some(trash))
         }
-        Ok(())
     }
 
     /// Saves matching attachments from one message into `target_dir`.
