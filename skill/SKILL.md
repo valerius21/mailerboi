@@ -31,6 +31,7 @@ Use `~/.local/bin/mailerboi` as the primary interface for email work.
 If the user asks to send an email, do not improvise and do not pretend the tool can do it.
 
 Respond along these lines:
+
 - `mailerboi` cannot send email. It can only inspect mail, modify mailbox state, download attachments, and save drafts.
 - I can prepare the content and save it to Drafts for later review and sending in another mail client.
 
@@ -38,34 +39,38 @@ Respond along these lines:
 
 ```bash
 # Inspect configured accounts
-~/.local/bin/mailerboi list-accounts
+~/.local/bin/mailerboi -o toon list-accounts
 
 # Verify connectivity before doing anything else
-~/.local/bin/mailerboi --account personal doctor
+~/.local/bin/mailerboi -o toon --account personal doctor
 
 # Check unread counts
-~/.local/bin/mailerboi --account personal check
+~/.local/bin/mailerboi -o toon --account personal check
 
 # List recent mail in INBOX as compact structured data
-~/.local/bin/mailerboi --account personal --output toon list --mailbox INBOX --limit 20
+~/.local/bin/mailerboi -o toon --account personal --output toon list --mailbox INBOX --limit 20
 
 # Read a specific message
-~/.local/bin/mailerboi --account personal read 1234 --mailbox INBOX
+~/.local/bin/mailerboi -o toon --account personal read 1234 --mailbox INBOX
 ```
 
 ## Decision tree
 
 **Need to confirm setup or fix connection issues?**
+
 - Run `doctor`.
 - Then read [REFERENCE.md](REFERENCE.md).
 
 **Need to inspect mail?**
+
 - Use `check`, `folders`, `list`, `search`, and `read`.
 
 **Need to change mailbox state?**
+
 - Use `flag`, `move`, `delete`, or `draft`.
 - Re-read the message first unless the request is already precise.
 
 ## References
 
 See [REFERENCE.md](REFERENCE.md) for detailed configuration, command reference, and workflow recipes.
+
