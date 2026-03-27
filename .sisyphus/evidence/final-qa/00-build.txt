@@ -1,3 +1,0 @@
-   Compiling mailerboi-core v0.1.0 (/home/valerius/code/mailerboi/crates/mailerboi-core)
-   Compiling mailerboi v0.1.0 (/home/valerius/code/mailerboi/crates/mailerboi)
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 4.18s

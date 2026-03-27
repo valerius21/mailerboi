@@ -1,4 +1,0 @@
-    Checking toon-format v0.4.4
-    Checking mailerboi-core v0.1.0 (/home/valerius/code/mailerboi/crates/mailerboi-core)
-    Checking mailerboi v0.1.0 (/home/valerius/code/mailerboi/crates/mailerboi)
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.75s

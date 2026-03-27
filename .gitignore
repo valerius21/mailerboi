@@ -16,3 +16,6 @@ devenv.local.yaml
 
 # Mailerboi user config (not tracked, use examples/ as template)
 ~/.config/mailerboi/credentials.toml
+
+# Sisyphus
+.sisyphus
